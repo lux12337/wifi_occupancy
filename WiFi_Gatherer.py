@@ -1,5 +1,5 @@
 import argparse
-import ConfigParser
+import configparser
 import subprocess
 import pandas as pd
 import hashlib
@@ -20,7 +20,7 @@ class wifi_gatherer(object):
     """
 
     def __init__(self, project_path = ".", config_file="config.ini", section="SNMP_config_aruba"):
-    
+
         self.project_path = project_path
         """
         initialize logging
@@ -44,7 +44,7 @@ class wifi_gatherer(object):
             raise Exception("config file not found")
         self.logger.info("section = %s"%self.snmp_section)
 
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(self.project_path+"/"+self.config_file)
         self.logger.info("successfully loaded config_file=%s"%self.config_file)
 
@@ -60,8 +60,8 @@ class wifi_gatherer(object):
             self.logger.error("unexpected error while setting configuration from config_file=%s, section=%s, error=%s"%(self.config_file, self.snmp_section, str(e)))
             raise e
 
-        # self.parse_script_arg()  #to get data from python call of the .py file - currently not used      
-        
+        # self.parse_script_arg()  #to get data from python call of the .py file - currently not used
+
     def parse_script_arg(self):
 
         """
@@ -78,7 +78,7 @@ class wifi_gatherer(object):
         except:
             print ("no argument passed")
             pass
-    
+
     def _get_data_SMNP(self):
 
         """
@@ -101,7 +101,7 @@ class wifi_gatherer(object):
                 raise Exception('snmpwalk exited with status %r: %r' % (p.returncode, err))
             else:
                 try:
-                    df = pd.read_csv(StringIO(out.decode('utf-8')), sep="\s+", header=None, names=["oid_mac_ip", "id"]) 
+                    df = pd.read_csv(StringIO(out.decode('utf-8')), sep="\s+", header=None, names=["oid_mac_ip", "id"])
                     self.logger.info("successfully imported dataframe from snmp output",)
                     return df
                 except Exception as e:
@@ -123,9 +123,9 @@ class wifi_gatherer(object):
             raise e
 
         return data
-    
+
     def get_wifi_data(self):
-        
+
         """
         This method gets the wi-fi data from file or snmp query calling the corresponding methods
         """
@@ -133,8 +133,8 @@ class wifi_gatherer(object):
         if self.input_from_file==True:
             data = self._get_data_from_file() # use sample file to test
         else:
-            data = self._get_data_SMNP() # run real query  
-    
+            data = self._get_data_SMNP() # run real query
+
     def parse_mac_address(self, data, regex=None):
 
         """
@@ -156,7 +156,7 @@ class wifi_gatherer(object):
     def anonymize_single_MAC_address(self, key_string, salt="1Ha7"):
 
         """
-        This method anonymizes single mac address string 
+        This method anonymizes single mac address string
 
         """
         try:
@@ -170,7 +170,7 @@ class wifi_gatherer(object):
     def anonymize_MAC_address_df(self, data, salt="1Ha7#a8(:^"):
 
         """
-        This method anonymizes multiple mac addresses and returns a dataframe 
+        This method anonymizes multiple mac addresses and returns a dataframe
 
         """
         try:
@@ -185,7 +185,7 @@ class wifi_gatherer(object):
         return data
 
     def get_current_time_utc(self, formatOpt="influxDB"):
-        
+
         """
         This method generate a timestamp for "now" to attach to the data extracted
 
@@ -196,7 +196,7 @@ class wifi_gatherer(object):
 
         if formatOpt=="Melrok":
             return datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S") # Melrok format
-    
+
     # retrieve count of connected devices for each AP
     def parse_connection_count_per_AP(self, data, include_time=True, formatOpt="Melrok"):
 
@@ -219,7 +219,7 @@ class wifi_gatherer(object):
         except Exception as e:
             self.logger.error("unexpected error while counting devices error=%s"%str(e))
             raise e
-        
+
         ## need to futher parse AP, Building, Room - figure out what is the structure of name
 
         return data
