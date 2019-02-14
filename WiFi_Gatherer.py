@@ -1,5 +1,5 @@
 import argparse
-import ConfigParser
+import configparser
 import subprocess
 import pandas as pd
 import hashlib
@@ -13,14 +13,14 @@ from logging.handlers import TimedRotatingFileHandler
 # @author : Anand Prakash <akprakash@lbl.gov>
 
 
-class wifi_gatherer(object):
+class wifi_gatherer():
     """
     This class gets the wifi data from the controller/file, outputs a dataframe with AP connection counts
     This also hashes the mac addresses (currently not used)
     """
 
     def __init__(self, project_path = ".", config_file="config.ini", section="SNMP_config_aruba"):
-    
+
         self.project_path = project_path
         """
         initialize logging
@@ -40,13 +40,13 @@ class wifi_gatherer(object):
         self.config_file = config_file
         self.snmp_section = section
         if not os.path.exists(self.project_path+"/"+self.config_file):
-            self.logger.error("cannot find config_file=%s"%self.config_file)
+            self.logger.error("cannot find config_file={}".format(self.config_file))
             raise Exception("config file not found")
-        self.logger.info("section = %s"%self.snmp_section)
+        self.logger.info("section = {}".format(self.snmp_section))
 
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(self.project_path+"/"+self.config_file)
-        self.logger.info("successfully loaded config_file=%s"%self.config_file)
+        self.logger.info("successfully loaded config_file={}".format(self.config_file))
 
         try:
             self.method = Config.get(self.snmp_section, "method")
@@ -57,11 +57,11 @@ class wifi_gatherer(object):
             self.switchname = Config.get(self.snmp_section, "switchname")
             self.oid = Config.get(self.snmp_section, "oid")
         except Exception as e:
-            self.logger.error("unexpected error while setting configuration from config_file=%s, section=%s, error=%s"%(self.config_file, self.snmp_section, str(e)))
+            self.logger.error("unexpected error while setting configuration from config_file={}, section={}, error={}".format(self.config_file, self.snmp_section, str(e)))
             raise e
 
-        # self.parse_script_arg()  #to get data from python call of the .py file - currently not used      
-        
+        # self.parse_script_arg()  #to get data from python call of the .py file - currently not used
+
     def parse_script_arg(self):
 
         """
@@ -78,7 +78,7 @@ class wifi_gatherer(object):
         except:
             print ("no argument passed")
             pass
-    
+
     def _get_data_SMNP(self):
 
         """
@@ -94,18 +94,18 @@ class wifi_gatherer(object):
                 out, err = p.communicate()
 
             except Exception as e:
-                self.logger.error("unexpected error when running snmpwalk command, error=%s"%str(e))
+                self.logger.error("unexpected error when running snmpwalk command, error={}".format(str(e)))
 
             if p.returncode != 0:
                 self.logger.error("snmpwalk exited with status %r: %r"% (p.returncode, err))
                 raise Exception('snmpwalk exited with status %r: %r' % (p.returncode, err))
             else:
                 try:
-                    df = pd.read_csv(StringIO(out.decode('utf-8')), sep="\s+", header=None, names=["oid_mac_ip", "id"]) 
+                    df = pd.read_csv(StringIO(out.decode('utf-8')), sep="\s+", header=None, names=["oid_mac_ip", "id"])
                     self.logger.info("successfully imported dataframe from snmp output",)
                     return df
                 except Exception as e:
-                    self.logger.error("unexpected error while reading from snmp output, error=%s"%(str(e)))
+                    self.logger.error("unexpected error while reading from snmp output, error{}".format(str(e)))
 
         else:
             self.logger.error("currently non implemented AP - SNMP query")
@@ -117,15 +117,15 @@ class wifi_gatherer(object):
         """
         try:
             data = pd.read_csv(self.project_path+"/"+self.input_file_name, sep="\s+", header=None, names=["oid_mac_ip", "id"])
-            self.logger.info("successfully imported dataframe from csv file=%s"%self.input_file_name)
+            self.logger.info("successfully imported dataframe from csv file={}".format(self.input_file_name))
         except Exception as e:
-            self.logger.error("unexpected error while reading from csv %s, error=%s"%(self.input_file_name, str(e)))
+            self.logger.error("unexpected error while reading from csv {}, error={}".format(self.input_file_name, str(e)))
             raise e
 
         return data
-    
+
     def get_wifi_data(self):
-        
+
         """
         This method gets the wi-fi data from file or snmp query calling the corresponding methods
         """
@@ -133,8 +133,8 @@ class wifi_gatherer(object):
         if self.input_from_file==True:
             data = self._get_data_from_file() # use sample file to test
         else:
-            data = self._get_data_SMNP() # run real query  
-    
+            data = self._get_data_SMNP() # run real query
+
     def parse_mac_address(self, data, regex=None):
 
         """
@@ -149,14 +149,14 @@ class wifi_gatherer(object):
             data = data.join(mac_original).drop("oid_mac_ip", axis=1)
             self.logger.info("successfully parsed mac address")
         except Exception as e:
-            self.logger.error("unexpected error while parsing mac address, error=%s"%(str(e)))
+            self.logger.error("unexpected error while parsing mac address, error={}".format(str(e)))
             raise e
         return data
 
     def anonymize_single_MAC_address(self, key_string, salt="1Ha7"):
 
         """
-        This method anonymizes single mac address string 
+        This method anonymizes single mac address string
 
         """
         try:
@@ -170,7 +170,7 @@ class wifi_gatherer(object):
     def anonymize_MAC_address_df(self, data, salt="1Ha7#a8(:^"):
 
         """
-        This method anonymizes multiple mac addresses and returns a dataframe 
+        This method anonymizes multiple mac addresses and returns a dataframe
 
         """
         try:
@@ -180,23 +180,23 @@ class wifi_gatherer(object):
             data = data.drop("mac_orig", axis=1)
             self.logger.info("successfully parsed mac address dataframe")
         except Exception as e:
-            self.logger.error("unexpected error while parsing mac address dataframe, error=%s"%(str(e)))
+            self.logger.error("unexpected error while parsing mac address dataframe, error={}".format(str(e)))
             raise e
         return data
 
     def get_current_time_utc(self, formatOpt="influxDB"):
-        
+
         """
         This method generate a timestamp for "now" to attach to the data extracted
 
         """
-        self.logger.debug("time format = %s"%formatOpt)
+        self.logger.debug("time format = {}".format(formatOpt))
         if formatOpt=="influxDB":
             return datetime.datetime.utcnow().strftime("%Y-%m-%dT%-H:%M:%-SZ") # influxDB format
 
         if formatOpt=="Melrok":
             return datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S") # Melrok format
-    
+
     # retrieve count of connected devices for each AP
     def parse_connection_count_per_AP(self, data, include_time=True, formatOpt="Melrok"):
 
@@ -217,9 +217,9 @@ class wifi_gatherer(object):
             else:
                 self.logger.warn("data to obtain count from is None, check this")
         except Exception as e:
-            self.logger.error("unexpected error while counting devices error=%s"%str(e))
+            self.logger.error("unexpected error while counting devices error={}".format(str(e)))
             raise e
-        
+
         ## need to futher parse AP, Building, Room - figure out what is the structure of name
 
         return data
