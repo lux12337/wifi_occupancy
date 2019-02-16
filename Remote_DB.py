@@ -1,5 +1,6 @@
 import os
 import logging
+import pandas
 import configparser
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL
@@ -53,10 +54,11 @@ class remote_db():
 
         self.db = self.create_DB_connection()
 
+
     def create_DB_connection(self):
 
         """
-        this method creates a sqlalchemy DB engine (pool of connection)
+        this method trys to establish a db connection
         """
 
         try:
@@ -67,6 +69,22 @@ class remote_db():
         except Exception as e:
             self.logger.error("could not connect to remote db")
             raise e
+
+
+    def push_to_remote(self, data):
+
+        """
+        this method pushes a pandas dataframe to the remote db
+        """
+
+        try:
+            for index, row in data.iterrows():
+                print(index, row['id'], row['value'], row['ts'])
+
+        except Exception as e:
+            self.logger.error("pushing to remote database failed")
+            raise e
+
 
 if __name__ == '__main__':
     remote = remote_db()
