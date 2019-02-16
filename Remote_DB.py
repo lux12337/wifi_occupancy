@@ -4,6 +4,8 @@ import configparser
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL
 
+# Luigi, Katelyn, Jasmine, Jose
+
 class remote_db():
     """
     This class establishes a connection with a remote db(TimescaleDB, InfluxDB, ORM) and pushes local data to it.
@@ -40,11 +42,31 @@ class remote_db():
             self.host = Config.get('remote_db', 'host')
             self.username = Config.get('remote_db', 'username')
             self.password = Config.get('remote_db', 'password')
+            self.table = Config.get('remote_db', 'table')
         except Exception as e:
             self.logger.error("unexpected error while setting configuration from config_file={}, error={}".format(self.config_file, str(e)))
             raise e
 
-        #db = DAL('mysql://testing:admin@localhost/test')
+        """
+        create a connection to the remote db
+        """
+
+        self.db = self.create_DB_connection()
+
+    def create_DB_connection(self):
+
+        """
+        this method creates a sqlalchemy DB engine (pool of connection)
+        """
+
+        try:
+            db = DAL('mysql://{}:{}@{}/{}'.format(self.username, self.password, self.host, self.table))
+            self.logger.info("remote db connection successfully established")
+            return db
+
+        except Exception as e:
+            self.logger.error("could not connect to remote db")
+            raise e
 
 if __name__ == '__main__':
     remote = remote_db()
