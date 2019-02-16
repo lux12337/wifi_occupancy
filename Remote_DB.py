@@ -77,13 +77,13 @@ class remote_db():
         this method pushes a pandas dataframe to the remote db
         """
 
-        self.db.define_table('wifi_table', Field('index'), Field('AP_id'), Field('value'), Field('ts'))
+        self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
 
         try:
             for i, row in data.iterrows():
-                # print(i, row['id'], row['value'], row['ts'])
-                self.db.wifi_table.insert(index=i, AP_id=row['id'], value=row['value'], ts=row['ts'])
+                self.db.wifi_table.insert(AP_id=row['id'], value=row['value'], ts=row['ts'])
             self.db.commit()
+            self.logger.info("data successfully pushed to remote db")
 
         except Exception as e:
             self.logger.error("pushing to remote database failed")
