@@ -3,7 +3,7 @@ import logging
 import pandas
 import configparser
 from logging.handlers import TimedRotatingFileHandler
-from pydal import DAL
+from pydal import DAL, Field
 
 # Luigi, Katelyn, Jasmine, Jose
 
@@ -43,7 +43,7 @@ class remote_db():
             self.host = Config.get('remote_db', 'host')
             self.username = Config.get('remote_db', 'username')
             self.password = Config.get('remote_db', 'password')
-            self.table = Config.get('remote_db', 'table')
+            self.database = Config.get('remote_db', 'database')
         except Exception as e:
             self.logger.error("unexpected error while setting configuration from config_file={}, error={}".format(self.config_file, str(e)))
             raise e
@@ -62,7 +62,7 @@ class remote_db():
         """
 
         try:
-            db = DAL('mysql://{}:{}@{}/{}'.format(self.username, self.password, self.host, self.table))
+            db = DAL('mysql://{}:{}@{}/{}'.format(self.username, self.password, self.host, self.database))
             self.logger.info("remote db connection successfully established")
             return db
 
@@ -77,9 +77,13 @@ class remote_db():
         this method pushes a pandas dataframe to the remote db
         """
 
+        self.db.define_table('wifi_table', Field('index'), Field('AP_id'), Field('value'), Field('ts'))
+
         try:
-            for index, row in data.iterrows():
-                print(index, row['id'], row['value'], row['ts'])
+            for i, row in data.iterrows():
+                # print(i, row['id'], row['value'], row['ts'])
+                self.db.wifi_table.insert(index=i, AP_id=row['id'], value=row['value'], ts=row['ts'])
+            self.db.commit()
 
         except Exception as e:
             self.logger.error("pushing to remote database failed")
