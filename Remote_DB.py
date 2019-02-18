@@ -63,6 +63,7 @@ class remote_db():
 
         try:
             db = DAL('mysql://{}:{}@{}/{}'.format(self.username, self.password, self.host, self.database))
+            db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
             self.logger.info("remote db connection successfully established")
             return db
 
@@ -76,8 +77,6 @@ class remote_db():
         """
         this method pushes a pandas dataframe to the remote db
         """
-
-        self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
 
         try:
             for i, row in data.iterrows():
