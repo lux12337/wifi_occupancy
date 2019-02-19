@@ -1,5 +1,5 @@
 from Local_DB import local_db
-from Remote_DB import remote_db
+from remote_db import remote_db
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
