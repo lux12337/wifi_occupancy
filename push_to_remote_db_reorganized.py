@@ -48,7 +48,7 @@ if not os.path.exists(project_path + "/" + config_filename):
     raise Exception("config file not found")
 
 Config = configparser.ConfigParser()
-Config.read(project_path + "/" + config_file)
+Config.read(project_path + "/" + config_filename)
 logger.info("successfully loaded config_file={}".format(config_filename))
 
 try:
@@ -68,7 +68,7 @@ except Exception as e:
     raise e
 
 # TODO dynamically assign db_name and arguments
-uri_ = uri.dbs['mysql'][uri.uri_](
+uri_ = uri.get_uri_function('mysql')(
     usename=username,
     password=password,
     host=host,

@@ -37,7 +37,7 @@ http://www.web2py.com/books/default/chapter/29/06/the-database-abstraction-layer
 updated 17 Feb 2019
 """
 
-from typing import Optional, Callable, Dict, Set
+from typing import Optional, Callable, Dict, Set, KeysView
 from inspect import signature
 
 
@@ -87,7 +87,7 @@ uri_params_ = 'uri_params'
 uri_optional_params_ = 'uri_optional_params'
 uri_required_params_ = 'uri_required_params'
 
-dbs: Dict[str, Dict[str,any]] = {
+_dbs: Dict[str, Dict[str, any]] = {
     sqlite.__name__: {
         uri_: sqlite,
         uri_params_: params(sqlite),
@@ -105,6 +105,54 @@ values: dictionaries of details.
 """
 
 
+def supported_databases() -> KeysView:
+    """
+    :return: dictionary keys enumerating the databases with existing uri
+    functions in this module.
+    """
+    return _dbs.keys()
+
+
+def get_uri_function(db_name: str) -> Callable[..., str]:
+    """
+    Get the uri creator function for a certain database.
+    :param db_name: the name of the database
+    :return: the function which creates uri strings for the given database.
+    """
+    try:
+        db = _dbs[db_name]
+    except KeyError:
+        raise Exception('invalid db name')
+
+    return db[uri_]
+
+def all_uri_params(db_name: str) -> Set[str]:
+    """
+    :param db_name: the name of the database.
+    :return: the set of parameters for the uri function of the particular db.
+    """
+    try:
+        db = _dbs[db_name]
+    except KeyError:
+        raise Exception('invalid db name')
+
+    return db[uri_params_]
+
+
+def optional_uri_params(db_name: str) -> Set[str]:
+    """
+    :param db_name: the name of the database.
+    :return: the set of required parameters for the uri function of the
+    particular db.
+    """
+    try:
+        db = _dbs[db_name]
+    except KeyError:
+        raise Exception('invalid db name')
+
+    return db[uri_optional_params_]
+
+
 def required_uri_params(db_name: str) -> Set[str]:
     """
     Creates the set of required parameters for a uri function,
@@ -115,19 +163,18 @@ def required_uri_params(db_name: str) -> Set[str]:
     """
 
     try:
-        db = dbs[db_name]
+        db = _dbs[db_name]
     except KeyError:
         raise Exception('invalid db name')
 
-    # if we already created it
+    # if we already created it,
     if uri_required_params_ in db and db[uri_required_params_]:
+        # then just return the stored value
         return db[uri_required_params_]
 
-    all_params = dbs[db_name][uri_params_]
-    optional_params = dbs[db_name][uri_optional_params_]
-
     # the required params remain after removing the optional params
-    db[uri_required_params_] = all_params - optional_params
+    db[uri_required_params_] = \
+        all_uri_params(db_name) - optional_uri_params(db_name)
 
     return db[uri_required_params_]
 
@@ -141,8 +188,8 @@ def sufficient_uri_args(db_name: str, args: Set[str]) -> bool:
     this module.
     """
 
-    all_params = dbs[db_name][uri_params_]
-    optional_params = dbs[db_name][uri_optional_params_]
+    all_params = _dbs[db_name][uri_params_]
+    optional_params = _dbs[db_name][uri_optional_params_]
 
     required_params = all_params - optional_params
 
