@@ -7,7 +7,7 @@ from pydal import DAL, Field
 
 # Luigi, Katelyn, Jasmine, Jose
 
-class remote_db():
+class RemoteDB():
     """
     This class establishes a connection with a remote db(TimescaleDB, InfluxDB, ORM) and pushes local data to it.
     """
@@ -91,4 +91,4 @@ class remote_db():
 
 
 if __name__ == '__main__':
-    remote = remote_db()
+    remote = RemoteDB()

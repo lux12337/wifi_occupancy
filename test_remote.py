@@ -1,4 +1,4 @@
-from Remote_DB import remote_db
+from remote_db import remote_db
 
 # Luigi, Katelyn, Jasmine, Jose
 
