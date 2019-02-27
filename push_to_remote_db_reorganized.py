@@ -6,9 +6,9 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import sys
 import configparser
+from typing import Dict, Callable
 
-# @author : Marco Pritoni <mpritoni@lbl.gov>
-# @author : Anand Prakash <akprakash@lbl.gov>
+# Luigi, Jose, Jasmine, Katelyn
 
 # command-line argument
 config_filename = sys.argv[1]
@@ -52,14 +52,13 @@ Config.read(project_path + "/" + config_filename)
 logger.info("successfully loaded config_file={}".format(config_filename))
 
 try:
-    """
-    TODO expect different config file values based on remote_db.uri resources,
-    which explicitly state the optional/required parameters for each database.
-    """
-    host = Config.get('remote_db', 'host')
-    username = Config.get('remote_db', 'username')
-    password = Config.get('remote_db', 'password')
-    database = Config.get('remote_db', 'database')
+    uri_args: Dict[str, str] = {}
+
+    for parameter in [
+        'database_type', 'host', 'username', 'password', 'database', 'filename'
+    ]:
+        uri_args[parameter] = Config.get('remote_db', parameter)
+
 except Exception as e:
     logger.error(
         "unexpected error while setting configuration from config_file={}, error={}"
@@ -67,17 +66,16 @@ except Exception as e:
     )
     raise e
 
-# TODO dynamically assign db_name and arguments
-uri_ = uri.get_uri_function('mysql')(
-    usename=username,
-    password=password,
-    host=host,
-    database=database
-)
+"""create the database uri"""
+
+# get the uri function for this type of database
+uri_creator: Callable[..., str] = uri.get_uri_function(uri_args['database_type'])
+
+# apply the arguments
+uri_: str = uri_creator(**uri_args)
 
 """push to external db"""
 
-#TODO: push to external db - add code
 remote = RemoteDB(uri_or_db=uri_)
 remote.push_to_remote(data)
 engine.delete_data_sent(data)

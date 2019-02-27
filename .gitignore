@@ -8,3 +8,5 @@ logs/*
 venv/*
 .idea/*
 */.DS_Store
+**/*.sqlite
+**/*.table

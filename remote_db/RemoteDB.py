@@ -97,6 +97,3 @@ class RemoteDB:
         except Exception as e:
             self.logger.error("pushing to remote database failed")
             raise e
-
-# if __name__ == '__main__':
-#     remote = RemoteDB()

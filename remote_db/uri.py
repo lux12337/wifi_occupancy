@@ -40,12 +40,14 @@ updated 17 Feb 2019
 from typing import Optional, Callable, Dict, Set, KeysView
 from inspect import signature
 
+# TODO change to variadic arguments
 
-def sqlite() -> str:
+
+def sqlite(filename: str, **_: any) -> str:
     """
     :return: the uri for a sqlite database
     """
-    return 'sqlite://storage.sqlite'
+    return 'sqlite://{}'.format(filename)
 
 
 def mysql(
@@ -54,7 +56,8 @@ def mysql(
     host: str,
     database: str,
     # include optional parameters in the dbs dictionary below
-    set_encoding: Optional[str]
+    set_encoding: Optional[str],
+    **_
 ) -> str:
     """
     :param username:
