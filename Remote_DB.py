@@ -44,6 +44,7 @@ class remote_db():
             self.username = Config.get('remote_db', 'username')
             self.password = Config.get('remote_db', 'password')
             self.database = Config.get('remote_db', 'database')
+            self.port = Config.get('remote_db', 'port')
         except Exception as e:
             self.logger.error("unexpected error while setting configuration from config_file={}, error={}".format(self.config_file, str(e)))
             raise e
@@ -62,7 +63,7 @@ class remote_db():
         """
 
         try:
-            db = DAL('mysql://{}:{}@{}/{}'.format(self.username, self.password, self.host, self.database))
+            db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
             db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
             self.logger.info("remote db connection successfully established")
             return db
