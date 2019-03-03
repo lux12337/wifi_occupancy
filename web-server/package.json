@@ -1,0 +1,14 @@
+{
+  "name": "web-server",
+  "version": "1.0.0",
+  "description": "A node.js web server written in typescript. The server will allow for packages to export data.",
+  "main": "index.js",
+  "repository": "https://github.com/katerzzzz/SmarterSmartBuildings",
+  "author": "Jose Alvarado, Luigi Chen, Katelyn Ma, Jasmine Talavera",
+  "license": "MIT",
+  "dependencies": {
+    "@types/express": "^4.16.1",
+    "express": "^4.16.4",
+    "tslint-config-standard": "^8.0.1"
+  }
+}

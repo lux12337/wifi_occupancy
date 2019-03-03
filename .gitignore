@@ -13,3 +13,6 @@ venv/*
 **/*.sqlite
 **/*.table
 **/*.db
+**/node_modules/**
+**/node_modules/*
+**/web-server/index.js
