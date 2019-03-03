@@ -75,6 +75,30 @@ def mysql(
         ('?set_encoding='+set_encoding) if set_encoding else ''
     )
 
+
+def postgres(
+    username: str,
+    password: str,
+    host: str,
+    database: str,
+    **_
+) -> str:
+    """
+    postgres://username:password@localhost/test
+    :param username:
+    :param password:
+    :param host:
+    :param database:
+    :return: the uri for a sqlite database
+    """
+    return 'postgres://{}:{}@{}/{}'.format(
+        username,
+        password,
+        host,
+        database
+    )
+
+
 def params(fun: Callable[..., any]) -> Set[str]:
     """
     :param fun: any function
@@ -100,6 +124,11 @@ _dbs: Dict[str, Dict[str, any]] = {
         uri_: mysql,
         uri_params_: params(mysql),
         uri_optional_params_: {'set_encoding'}
+    },
+    postgres.__name__: {
+        uri_: postgres,
+        uri_params_: params(postgres),
+        uri_optional_params_: {}
     }
 }
 """

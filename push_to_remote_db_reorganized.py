@@ -51,20 +51,17 @@ Config = configparser.ConfigParser()
 Config.read(project_path + "/" + config_filename)
 logger.info("successfully loaded config_file={}".format(config_filename))
 
-try:
-    uri_args: Dict[str, str] = {}
 
-    for parameter in [
-        'database_type', 'host', 'username', 'password', 'database', 'filename'
-    ]:
+uri_args: Dict[str, str] = {}
+
+for parameter in [
+    'database_type', 'host', 'username', 'password', 'database', 'filename'
+]:
+    try:
         uri_args[parameter] = Config.get('remote_db', parameter)
+    except Exception as e:
+        print('did not find parameter "{}" in config file'.format(parameter))
 
-except Exception as e:
-    logger.error(
-        "unexpected error while setting configuration from config_file={}, error={}"
-        .format(config_filename, str(e))
-    )
-    raise e
 
 """create the database uri"""
 
