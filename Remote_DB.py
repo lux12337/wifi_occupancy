@@ -65,6 +65,7 @@ class remote_db():
         try:
             db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
             db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
+            self.create_HT_timescaledb()
             self.logger.info("remote db connection successfully established")
             return db
 
@@ -72,6 +73,13 @@ class remote_db():
             self.logger.error("could not connect to remote db")
             raise e
 
+    def create_HT_timescaledb(self):
+        try:
+            self.db.executesql("SELECT create_hypertable('wifi_table', 'ts');")
+            self.logger.info("wifi_table turned into hypertable")
+
+        except Exception as e:
+            self.logger.error("wifi_table could be a hypertable already, message returned is '{}'".format(str(e)))
 
     def push_to_remote(self, data):
 
@@ -89,6 +97,20 @@ class remote_db():
             self.logger.error("pushing to remote database failed")
             raise e
 
+    def drop_table(self):
+
+        """
+        this method drops wifi_table from the remote db
+        """
+
+        try:
+            self.db.wifi_table.drop()
+            self.db.commit()
+            self.logger.info("wifi_table successfully dropped")
+
+        except Exception as e:
+            self.logger.error("wifi_table could not be dropped")
+            raise e
 
 if __name__ == '__main__':
     remote = remote_db()
