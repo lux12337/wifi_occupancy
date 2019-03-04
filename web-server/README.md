@@ -26,3 +26,13 @@ To run the server, simply run:
 ```bash
 ./compile-and-run.sh
 ```
+
+## Config
+
+There is one config file
+```./src/config.json```.
+
+The parameters for said file should be
+contained in the ```./src/Config.ts```
+as an interface. This will be used in the
+code.
