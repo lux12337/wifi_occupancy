@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-tsc index.ts
-node index.js config.json
+tsc ./src/index.ts
+node ./src/index.js ./src/config.json

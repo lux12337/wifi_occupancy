@@ -1,0 +1,9 @@
+{
+  "port": 3000,
+  "one_time_request": {
+    "suburl": "/one-time-request"
+  },
+  "pomona_output": {
+    "filepath": "./data/pomona_output.txt"
+  }
+}
