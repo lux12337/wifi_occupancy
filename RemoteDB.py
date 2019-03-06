@@ -44,6 +44,7 @@ class RemoteDB():
             self.username = Config.get('remote_db', 'username')
             self.password = Config.get('remote_db', 'password')
             self.database = Config.get('remote_db', 'database')
+            self.port = Config.get('remote_db', 'port')
         except Exception as e:
             self.logger.error("unexpected error while setting configuration from config_file={}, error={}".format(self.config_file, str(e)))
             raise e
@@ -52,7 +53,7 @@ class RemoteDB():
         create a connection to the remote db
         """
 
-        self.db = self.create_DB_connection()
+        self.create_DB_connection()
 
 
     def create_DB_connection(self):
@@ -62,15 +63,32 @@ class RemoteDB():
         """
 
         try:
-            db = DAL('mysql://{}:{}@{}/{}'.format(self.username, self.password, self.host, self.database))
-            db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
+            self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+            self.create_table()
+            self.create_HT_timescaledb()
             self.logger.info("remote db connection successfully established")
-            return db
 
         except Exception as e:
             self.logger.error("could not connect to remote db")
             raise e
 
+    def create_table(self):
+        try:
+            self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
+            self.logger.info("wifi_table was created in remote db")
+
+        except Exception as e:
+            self.db.commit()
+            self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
+
+    def create_HT_timescaledb(self):
+        try:
+            self.db.executesql("SELECT create_hypertable('wifi_table', 'ts');")
+            self.logger.info("wifi_table turned into hypertable")
+
+        except Exception as e:
+            self.db.commit()
+            self.logger.warning("wifi_table could be a hypertable already, message returned is '{}'".format(str(e)))
 
     def push_to_remote(self, data):
 
@@ -88,6 +106,19 @@ class RemoteDB():
             self.logger.error("pushing to remote database failed")
             raise e
 
+    def drop_table(self):
+
+        """
+        this method drops wifi_table from the remote db
+        """
+
+        try:
+            self.db.wifi_table.drop()
+            self.logger.info("wifi_table successfully dropped")
+
+        except Exception as e:
+            self.logger.error("wifi_table could not be dropped")
+            raise e
 
 if __name__ == '__main__':
     remote = RemoteDB()
