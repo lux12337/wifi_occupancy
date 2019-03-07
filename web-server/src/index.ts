@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as kill from 'kill-port';
 import { config } from './get-config';
-import { router as oneTimeRequest } from './one-time-request';
+import { router as router1 } from './router1';
 
 // collect command-line arguments
 const [
@@ -13,7 +13,7 @@ const [
 // create the express app
 const app: express.Express = express();
 
-app.use(config.one_time_request.suburl, oneTimeRequest);
+app.use(config.router1.suburl, router1);
 
 // first, kill the process on the port.
 kill( config.port )

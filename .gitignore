@@ -15,5 +15,5 @@ venv/*
 **/*.db
 **/node_modules/**
 **/node_modules/*
-**/web-server/**.js
-**/web-server/*.js
+**/web-server/**/**.js
+**/web-server/**/*.js

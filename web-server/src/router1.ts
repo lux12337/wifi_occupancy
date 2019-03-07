@@ -3,7 +3,7 @@ import * as HttpStatusCodes from 'http-status-codes';
 import {config} from './get-config';
 import {DataFormat, pomona_output} from './get-data';
 
-const subconfig = config.one_time_request;
+const subconfig = config.router1;
 
 /**
  * This router will handle requests that ask for the data all at once.

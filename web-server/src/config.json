@@ -1,6 +1,6 @@
 {
   "port": 3000,
-  "one_time_request": {
+  "router1": {
     "suburl": "/one-time-request"
   },
   "pomona_output": {

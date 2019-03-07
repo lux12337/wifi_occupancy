@@ -4,7 +4,7 @@
  */
 export interface Config {
   port: number,
-  one_time_request: {
+  router1: {
     suburl: string
   },
   pomona_output: {
