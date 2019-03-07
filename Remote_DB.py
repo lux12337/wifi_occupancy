@@ -2,6 +2,8 @@ import os
 import logging
 import pandas
 import configparser
+import time
+import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
 
@@ -72,23 +74,31 @@ class remote_db():
             self.logger.error("could not connect to remote db")
             raise e
 
+
     def create_table(self):
         try:
-            self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('ts'))
+            self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('time', type='datetime'))
             self.logger.info("wifi_table was created in remote db")
 
         except Exception as e:
             self.db.commit()
             self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
 
+
     def create_HT_timescaledb(self):
         try:
-            self.db.executesql("SELECT create_hypertable('wifi_table', 'ts');")
+            self.db.executesql("SELECT create_hypertable('wifi_table', 'time');")
             self.logger.info("wifi_table turned into hypertable")
 
         except Exception as e:
             self.db.commit()
             self.logger.warning("wifi_table could be a hypertable already, message returned is '{}'".format(str(e)))
+
+    def test(self, data):
+        print(data)
+        # for i, row in data.iterrows():
+        #     str = row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14]
+        #     print(str)
 
     def push_to_remote(self, data):
 
@@ -98,13 +108,14 @@ class remote_db():
 
         try:
             for i, row in data.iterrows():
-                self.db.wifi_table.insert(AP_id=row['id'], value=row['value'], ts=row['ts'])
+                self.db.wifi_table.insert(AP_id=row['id'], value=row['value'], time=(row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14]))
             self.db.commit()
             self.logger.info("data successfully pushed to remote db")
 
         except Exception as e:
             self.logger.error("pushing to remote database failed")
             raise e
+
 
     def drop_table(self):
 
