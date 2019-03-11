@@ -9,10 +9,11 @@ from pydal import DAL, Field
 
 # Luigi, Katelyn, Jasmine, Jose
 
-class RemoteDB():
+class remote_db():
     """
     This class establishes a connection with a remote db(TimescaleDB, InfluxDB, ORM) and pushes local data to it.
     """
+
 
     def __init__(self, project_path = ".", config_file="config.ini"):
 
@@ -57,7 +58,6 @@ class RemoteDB():
 
         self.create_DB_connection()
 
-
     def create_DB_connection(self):
 
         """
@@ -74,7 +74,6 @@ class RemoteDB():
             self.logger.error("could not connect to remote db")
             raise e
 
-
     def create_table(self):
         try:
             self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('time', type='datetime'))
@@ -83,7 +82,6 @@ class RemoteDB():
         except Exception as e:
             self.db.commit()
             self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
-
 
     def create_HT_timescaledb(self):
         try:
@@ -132,4 +130,4 @@ class RemoteDB():
             raise e
 
 if __name__ == '__main__':
-    remote = RemoteDB()
+    remote = remote_db()

@@ -1,5 +1,5 @@
 from Local_DB import local_db
-from remote_db import remote_db
+from Remote_DB import remote_db
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
@@ -20,9 +20,10 @@ logger.addHandler(handler)
 engine = local_db(project_path = project_path)
 data = engine.read_local_DB()
 
-#TODO: push to external db - add code
+# TODO: push to external db - add code
 remote = remote_db()
 # remote.push_to_remote(data)
 # engine.delete_data_sent(data)
 # remote.drop_table()
-remote.test(data)
+# remote.test(data)
+
