@@ -77,6 +77,11 @@ class remote_db():
 
 
     def create_table(self):
+
+        """
+        this method creates a SQL type of table in the remote db, if it fails, it catches the warning and logs it
+        """
+
         try:
             self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('time', type='datetime'))
             self.logger.info("wifi_table was created in remote db")
@@ -86,6 +91,11 @@ class remote_db():
 
 
     def create_table_timescale(self):
+
+        """
+        this method creates a postgres table in preparation for a hypertable in timescale
+        """
+
         try:
             self.db.executesql("CREATE TABLE IF NOT EXISTS wifi_table(time TIMESTAMP, AP_id CHAR(512), value CHAR(512));")
             self.db.commit()
@@ -97,6 +107,11 @@ class remote_db():
 
 
     def create_hypertable_timescale(self):
+
+        """
+        this method tries to turn wifi_table into a hypertable, and it if it fails, it will catch the warning and rollback the commit
+        """
+
         try:
             self.db.executesql("SELECT create_hypertable('wifi_table', 'time');")
             self.db.commit()
@@ -142,13 +157,6 @@ class remote_db():
             self.logger.error("pushing to remote database failed")
             raise e
 
-    def pandas_to_csv(self, data):
-        with open('temp_data.csv', 'w') as csvFile:
-            for i, row in data.iterrows():
-                row = [row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14], row['id'], row['value']]
-                writer = csv.writer(csvFile)
-                writer.writerow(row)
-        csvFile.close()
 
     def drop_table(self):
 
