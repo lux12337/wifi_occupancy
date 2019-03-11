@@ -41,7 +41,6 @@ columns[0], columns[ts_index] = columns[ts_index], columns[0]
 data = data[columns]
 data.set_index('ts', inplace=True)
 
-
 """push to remote db"""
 
 # TODO: push to external db - add code
