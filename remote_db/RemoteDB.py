@@ -3,7 +3,8 @@ import logging
 from pandas import DataFrame
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
-from typing import Union
+from influxdb import InfluxDBClient
+from typing import Union, Dict, List
 
 # Luigi, Katelyn, Jasmine, Jose
 
@@ -18,11 +19,33 @@ class RemoteDB:
 
     def __init__(
         self,
-        uri_or_db: Union[str, DAL],
+        dal_or_uri: Union[None, DAL, str],
+        influx_client_or_args: Union[None, InfluxDBClient, Dict],
         project_path: str = "."
     ):
+        def count_None(arr: List[any]):
+            """
+            :return: the number of None elements in a list
+            """
+            count = 0
+            for a in arr:
+                if a is None:
+                    count = count + 1
+            return count
+
+        db_configs = [
+            dal_or_uri,
+            influx_client_or_args
+        ]
+
+        # There should be exactly one db config object
+        if not 1 == len(db_configs) - count_None(db_configs):
+            raise Exception(
+                '0 or 1< databases requested. Only 1 is allowed'
+            )
+
         self._init_logging_and_project_path(project_path)
-        self.set_db_connection(uri_or_db)
+        self.connect_db_with_dal(dal_or_uri)
 
     def _init_logging_and_project_path(self, project_path: str) -> None:
 
@@ -49,7 +72,7 @@ class RemoteDB:
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
-    def set_db_connection(self, uri_or_db: Union[str, DAL]) -> DAL:
+    def connect_db_with_dal(self, uri_or_db: Union[str, DAL]) -> DAL:
         """
         This method tries to establish a db connection. If it's successful,
         it'll return a DAL instance. If it fails, it'll throw an error.

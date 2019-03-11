@@ -73,6 +73,6 @@ uri_: str = uri_creator(**uri_args)
 
 """push to external db"""
 
-remote = RemoteDB(uri_or_db=uri_)
+remote = RemoteDB(dal_or_uri=uri_)
 remote.push_to_remote(data)
 engine.delete_data_sent(data)
