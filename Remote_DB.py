@@ -135,7 +135,7 @@ class remote_db():
             for i, row in data.iterrows():
                 time = (row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14])
                 self.db.executesql("INSERT INTO wifi_table VALUES('{}', '{}', '{}')".format(time, row['id'], row['value']))
-                self.db.commit()
+            self.db.commit()
             self.logger.info("data successfully pushed to remote db")
 
         except Exception as e:
