@@ -4,7 +4,7 @@ from pandas import DataFrame
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
 from influxdb import InfluxDBClient
-from typing import Union, Dict, List
+from typing import Union, Optional, Dict, List
 
 # Luigi, Katelyn, Jasmine, Jose
 
@@ -19,8 +19,8 @@ class RemoteDB:
 
     def __init__(
         self,
-        dal_or_uri: Union[None, DAL, str],
-        influx_client_or_args: Union[None, InfluxDBClient, Dict],
+        dal_or_uri: Union[None, DAL, str] = None,
+        influx_client_or_args: Union[None, InfluxDBClient, Dict] = None,
         project_path: str = "."
     ):
         def count_None(arr: List[any]):
@@ -45,7 +45,10 @@ class RemoteDB:
             )
 
         self._init_logging_and_project_path(project_path)
-        self.connect_db_with_dal(dal_or_uri)
+
+        if dal_or_uri is not None:
+            self.connect_db_with_dal(dal_or_uri)
+        # TODO continue with influx and timescale
 
     def _init_logging_and_project_path(self, project_path: str) -> None:
 
