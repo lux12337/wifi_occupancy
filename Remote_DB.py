@@ -43,6 +43,7 @@ class remote_db():
         self.logger.info("successfully loaded config_file={}".format(self.config_file))
 
         try:
+            self.db_type = Config.get('remote_db', 'db_type')
             self.host = Config.get('remote_db', 'host')
             self.username = Config.get('remote_db', 'username')
             self.password = Config.get('remote_db', 'password')
@@ -66,9 +67,22 @@ class remote_db():
         """
 
         try:
-            self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
-            self.create_table()
-            # self.create_hypertable_timescale()
+            if self.db_type == "mysql":
+                self.db = DAL('mysql://{}:{}@{}:{}/{}?set_encoding=utf8mb4'.format(self.username, self.password, self.host, self.port, self.database))
+                self.create_table()
+
+            elif self.db_type == "postgres":
+                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+                self.create_table()
+
+            elif self.db_type == "timescale":
+                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+                self.create_table_timescale()
+                self.create_hypertable_timescale()
+
+            else:
+                raise Exception('Database type string invalid.')
+
             self.logger.info("remote db connection successfully established")
 
         except Exception as e:
@@ -121,6 +135,23 @@ class remote_db():
             self.db.rollback()
             self.logger.warning("tried to create hypertable from wifi_table, returned message='{}'".format(str(e)))
 
+
+    def push_to_remote_db(self, data):
+        try:
+            if self.db_type == "mysql":
+                self.push_to_remote(data)
+
+            elif self.db_type == "postgres":
+                self.push_to_remote(data)
+
+            elif self.db_type == "timescale":
+                self.push_to_remote_timescale(data)
+
+            self.logger.info("push to remote successful")
+
+        except Exception as e:
+            self.logger.error("push failed")
+            raise e
 
     def push_to_remote(self, data):
 
