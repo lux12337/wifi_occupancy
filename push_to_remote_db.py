@@ -20,10 +20,25 @@ logger.addHandler(handler)
 engine = local_db(project_path = project_path)
 data = engine.read_local_DB()
 
+# for influx, ts must in datetime format
+print(data.columns.values)
+data['ts'] = data['ts'].apply(
+    # YYYY-MM-DD HH:MM:SS
+    lambda ts: ts[:4] + '-' + ts[4:6] + '-' + ts[6:8]
+    + ' ' + ts[8:10] + ':' + ts[10:12] + ':' + ts[12:14]
+)
+# for influx, ts must be the index
+data.set_index('ts', verify_integrity=True)
+print(data.columns.values)
+
+"""push to remote db"""
+
 # TODO: push to external db - add code
 remote = remote_db()
 # remote.push_to_remote(data)
 # engine.delete_data_sent(data)
 # remote.drop_table()
 # remote.test(data)
-
+remote.push_to_influx_database(
+    data=data, measurement='wifi'
+)

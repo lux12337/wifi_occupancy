@@ -1,19 +1,21 @@
 import os
 import logging
-import pandas
+import pandas as pd
+from pandas import DataFrame
 import configparser
 import time
 import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
+from influxdb import DataFrameClient
 
 # Luigi, Katelyn, Jasmine, Jose
+
 
 class remote_db():
     """
     This class establishes a connection with a remote db(TimescaleDB, InfluxDB, ORM) and pushes local data to it.
     """
-
 
     def __init__(self, project_path = ".", config_file="config.ini"):
 
@@ -56,14 +58,13 @@ class remote_db():
         create a connection to the remote db
         """
 
-        self.create_DB_connection()
+        # self.create_DB_connection()
+        self.set_up_influx_client()
 
     def create_DB_connection(self):
-
         """
         this method trys to establish a db connection
         """
-
         try:
             self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
             self.create_table()
@@ -73,6 +74,44 @@ class remote_db():
         except Exception as e:
             self.logger.error("could not connect to remote db")
             raise e
+
+    def set_up_influx_client(self) -> DataFrameClient:
+        self.influx_client = DataFrameClient(
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            database=self.database
+        )
+        self.influx_client.ping()
+        return self.influx_client
+
+    def safe_create_influx_database(self) -> None:
+        """
+        Creates a new influx database with database_name.
+        If one already exists, then nothing happens.
+        """
+        # The CREATE DATABASE command does nothing if the database
+        # already exists. Hopefully, this client's method acts similarly.
+        self.influx_client.create_database(self.database)
+
+    def push_to_influx_database(
+        self, data: DataFrame, measurement: str
+    ) -> None:
+        """
+        Will create database if it doesn't exist, then push to it.
+        :param data: pandas DataFrame indexed by timestamp
+        :param database_name: the name of the database to push to
+        :param measurement: the name of this measurement
+        :return:
+        """
+        self.safe_create_influx_database()
+        self.influx_client.write_points(
+            dataframe=data,
+            measurement=measurement,
+            database=self.database,
+            protocol='json'
+        )
 
     def create_table(self):
         try:
@@ -99,11 +138,9 @@ class remote_db():
         #     print(str)
 
     def push_to_remote(self, data):
-
         """
         this method pushes a pandas dataframe to the remote db
         """
-
         try:
             for i, row in data.iterrows():
                 self.db.wifi_table.insert(AP_id=row['id'], value=row['value'], time=(row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14]))
@@ -113,7 +150,6 @@ class remote_db():
         except Exception as e:
             self.logger.error("pushing to remote database failed")
             raise e
-
 
     def drop_table(self):
 
