@@ -3,7 +3,7 @@ from Remote_DB import remote_db
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
 # @author : Marco Pritoni <mpritoni@lbl.gov>
 # @author : Anand Prakash <akprakash@lbl.gov>
@@ -21,19 +21,25 @@ logger.addHandler(handler)
 engine = local_db(project_path = project_path)
 data: DataFrame = engine.read_local_DB()
 
+"""manipulate the dataframe"""
+
 columns = list(data.columns)
-print(columns)
+
 # for influx, ts must in datetime format
 data['ts'] = data['ts'].apply(
     # YYYY-MM-DD HH:MM:SS
-    lambda ts: ts[:4] + '-' + ts[4:6] + '-' + ts[6:8]
-    + ' ' + ts[8:10] + ':' + ts[10:12] + ':' + ts[12:14]
+    lambda ts: to_datetime(
+        ts[:4] + '-' + ts[4:6] + '-' + ts[6:8]
+        + ' ' + ts[8:10] + ':' + ts[10:12] + ':' + ts[12:14]
+    )
 )
-columns = list(data.columns)
-ts_index = columns.index('ts')
+ts_index: int = columns.index('ts')
+# swap to ensure that ts is the first column
 columns[0], columns[ts_index] = columns[ts_index], columns[0]
+# ensure DateTimeIndex
 data = data[columns]
-print(list(data.columns))
+data.set_index('ts')
+
 
 """push to remote db"""
 
