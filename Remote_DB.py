@@ -67,8 +67,8 @@ class remote_db():
 
         try:
             self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
-            self.create_table_timescale()
-            self.create_hypertable_timescale()
+            self.create_table()
+            # self.create_hypertable_timescale()
             self.logger.info("remote db connection successfully established")
 
         except Exception as e:
