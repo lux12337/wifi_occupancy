@@ -52,3 +52,5 @@ remote = remote_db()
 remote.push_to_influx_database(
     data=data, measurement='wifi'
 )
+print('after push')
+remote.print_influx_status()

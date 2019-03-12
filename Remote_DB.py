@@ -60,6 +60,7 @@ class remote_db():
 
         # self.create_DB_connection()
         self.set_up_influx_client()
+        self.print_influx_status()
 
     def create_DB_connection(self):
         """
@@ -83,8 +84,13 @@ class remote_db():
             password=self.password,
             database=self.database
         )
-        self.influx_client.ping()
         return self.influx_client
+
+    def print_influx_status(self) -> None:
+        print(self.influx_client.ping())
+        print(self.influx_client.get_list_database())
+        print(self.influx_client.get_list_users())
+        print(self.influx_client.query("select * from example"))
 
     def safe_create_influx_database(self) -> None:
         """
@@ -106,14 +112,14 @@ class remote_db():
         :return:
         """
         self.safe_create_influx_database()
-        print(data.to_dict())
+        # print(data.to_dict())
         self.influx_client.write_points(
             dataframe=data,
             measurement=measurement,
             database=self.database,
             protocol='json'
         )
-        print(self.influx_client.query("select * from example"))
+        # print(self.influx_client.query("select * from example"))
 
     def create_table(self):
         try:
