@@ -25,6 +25,10 @@ data_as_dict = data.to_dict()
 
 """manipulate the dataframe"""
 
+print(data[
+        data.duplicated(['value'],)
+])
+
 def preprocess_data(data: DataFrame) -> DataFrame:
     """
     TODO ask how data should be processed to avoid bug where
