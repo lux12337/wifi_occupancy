@@ -80,6 +80,10 @@ class remote_db():
                 self.create_table_timescale()
                 self.create_hypertable_timescale()
 
+            elif self.db_type == "sqlite":
+                self.db = DAL('sqlite://{}'.format(self.username))
+                self.create_table()
+
             else:
                 raise Exception('Database type string invalid.')
 
@@ -146,6 +150,9 @@ class remote_db():
 
             elif self.db_type == "timescale":
                 self.push_to_remote_timescale(data)
+
+            elif self.db_type == "sqlite":
+                self.push_to_remote(data)
 
             self.logger.info("push to remote successful")
 
