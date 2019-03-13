@@ -23,50 +23,6 @@ engine = local_db(project_path = project_path)
 data: DataFrame = engine.read_local_DB()
 data_as_dict = data.to_dict()
 
-"""manipulate the dataframe"""
-
-def preprocess_data(data: DataFrame) -> DataFrame:
-    """
-    TODO ask how data should be processed to avoid bug where
-    elements of repeating timestamps are consolidated.
-    :param data:
-    :return:
-    """
-    # debugging
-    data_as_dict: Dict = data.to_dict()
-
-    columns = list(data.columns)
-
-    # for influx, ts must in datetime format
-    data['ts'] = DatetimeIndex(data['ts'].apply(
-        # "YYYY-MM-DD HH:MM:SS"
-        lambda ts: to_datetime(
-            arg=ts, format='%Y%m%d%H%M%S'
-        )
-    ))
-
-    # debugging
-    data_as_dict = data.to_dict()
-
-    # swap to ensure that ts is the first column
-    ts_index: int = columns.index('ts')
-    columns[0], columns[ts_index] = columns[ts_index], columns[0]
-    data = data[columns]
-
-    # debugging
-    data_as_dict = data.to_dict()
-
-    # ensure that index is DatetimeIndex
-    data.set_index('ts', inplace=True)
-
-    #debugging
-    data_as_dict = data.to_dict()
-
-    return data
-
-
-data = preprocess_data(data)
-
 """push to remote db"""
 
 # TODO: push to external db - add code
@@ -75,9 +31,9 @@ remote = remote_db()
 # engine.delete_data_sent(data)
 # remote.drop_table()
 # remote.test(data)
-remote.print_influx_status()
+# remote.print_influx_status()
 remote.push_to_remote_db(
     data=data, influx_measurement='wifi'
 )
 print('after push')
-remote.print_influx_status()
+# remote.print_influx_status()
