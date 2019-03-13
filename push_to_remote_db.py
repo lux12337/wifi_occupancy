@@ -64,19 +64,20 @@ def preprocess_data(data: DataFrame) -> DataFrame:
 
     return data
 
+
 data = preprocess_data(data)
 
 """push to remote db"""
 
 # TODO: push to external db - add code
 remote = remote_db()
-remote.print_influx_status()
 # remote.push_to_remote(data)
 # engine.delete_data_sent(data)
 # remote.drop_table()
 # remote.test(data)
-remote.push_to_influx_database(
-    data=data, measurement='wifi'
+remote.print_influx_status()
+remote.push_to_remote_db(
+    data=data, influx_measurement='wifi'
 )
 print('after push')
 remote.print_influx_status()

@@ -9,6 +9,7 @@ import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
 from influxdb import DataFrameClient
+from typing import Optional
 
 # Luigi, Katelyn, Jasmine, Jose
 
@@ -103,9 +104,9 @@ class remote_db():
                 self.create_table_timescale()
                 self.create_hypertable_timescale()
 
-            elif self.db_type == "sqlite":
-                self.db = DAL('sqlite://{}'.format(self.username))
-                self.create_table()
+            elif self.db_type == "influx":
+                self.db = None
+                self.set_up_influx_client()
 
             else:
                 raise Exception('Database type string invalid.')
@@ -132,7 +133,7 @@ class remote_db():
         print(self.influx_client.get_list_measurements())
         print(self.influx_client.get_list_users())
         print(self.influx_client.get_list_privileges(username=self.username))
-        print(self.influx_client.query('select * from "wifi"'))
+        # print(self.influx_client.query('select * from "wifi"').items())
 
     def safe_create_influx_database(self) -> None:
         """
@@ -169,7 +170,6 @@ class remote_db():
         )
 
     def create_table(self):
-
         """
         this method creates a SQL type of table in the remote db, if it fails, it catches the warning and logs it
         """
@@ -180,13 +180,10 @@ class remote_db():
         except Exception as e:
             self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
 
-
     def create_table_timescale(self):
-
         """
         this method creates a postgres table in preparation for a hypertable in timescale
         """
-
         try:
             self.db.executesql("CREATE TABLE IF NOT EXISTS wifi_table(time TIMESTAMP, AP_id CHAR(512), value CHAR(512));")
             self.db.commit()
@@ -196,13 +193,11 @@ class remote_db():
             self.logger.warning("creation of wifi_table failed, error='{}'".format(str(e)))
             raise e
 
-
     def create_hypertable_timescale(self):
 
         """
         this method tries to turn wifi_table into a hypertable, and it if it fails, it will catch the warning and rollback the commit
         """
-
         try:
             self.db.executesql("SELECT create_hypertable('wifi_table', 'time');")
             self.db.commit()
@@ -212,18 +207,21 @@ class remote_db():
             self.db.rollback()
             self.logger.warning("tried to create hypertable from wifi_table, returned message='{}'".format(str(e)))
 
-    def push_to_remote_db(self, data):
+    def push_to_remote_db(self, data: DataFrame, influx_measurement: Optional[str] = None):
         try:
             if self.db_type == "mysql"\
                     or self.db_type == "sqlite"\
                     or self.db_type == "postgres":
-                self.push_to_remote(data)
+                self.push_to_remote_dal(data)
 
             elif self.db_type == "timescale":
                 self.push_to_remote_timescale(data)
 
-            elif self.db_type == "sqlite":
-                self.push_to_remote(data)
+            elif self.db_type == "influx":
+                self.push_to_influx_database(
+                    data=data,
+                    measurement=influx_measurement
+                )
 
             self.logger.info("push to remote successful")
 
@@ -231,17 +229,11 @@ class remote_db():
             self.logger.error("push failed")
             raise e
 
-    def push_to_remote(self, data):
+    def push_to_remote_dal(self, data):
         """
         this method pushes a pandas dataframe to the remote db
         """
         try:
-            print(
-                self.db.get_instances()
-            )
-            print(
-                self.db.wifi_table.as_dict()
-            )
             for i, row in data.iterrows():
                 self.db.wifi_table.insert(
                     AP_id=row['id'],
@@ -291,7 +283,6 @@ class remote_db():
         except Exception as e:
             self.logger.error("wifi_table could not be dropped")
             raise e
-
 
     def drop_table_timescale(self):
 
