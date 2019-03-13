@@ -60,7 +60,6 @@ class remote_db():
 
         # self.create_DB_connection()
         self.set_up_influx_client()
-        self.print_influx_status()
 
     def create_DB_connection(self):
         """
@@ -89,8 +88,10 @@ class remote_db():
     def print_influx_status(self) -> None:
         print(self.influx_client.ping())
         print(self.influx_client.get_list_database())
+        print(self.influx_client.get_list_measurements())
         print(self.influx_client.get_list_users())
-        print(self.influx_client.query("select * from example"))
+        print(self.influx_client.get_list_privileges(username=self.username))
+        print(self.influx_client.query('select * from "wifi"'))
 
     def safe_create_influx_database(self) -> None:
         """
@@ -101,25 +102,30 @@ class remote_db():
         # already exists. Hopefully, this client's method acts similarly.
         self.influx_client.create_database(self.database)
 
+    def safe_create_user(self, make_admin: bool = False) -> None:
+        self.influx_client.create_user(
+            username=self.username,
+            password=self.password,
+            admin=make_admin
+        )
+
     def push_to_influx_database(
         self, data: DataFrame, measurement: str
     ) -> None:
         """
         Will create database if it doesn't exist, then push to it.
         :param data: pandas DataFrame indexed by timestamp
-        :param database_name: the name of the database to push to
         :param measurement: the name of this measurement
         :return:
         """
         self.safe_create_influx_database()
-        # print(data.to_dict())
+        self.safe_create_user(make_admin=False)
         self.influx_client.write_points(
             dataframe=data,
             measurement=measurement,
             database=self.database,
-            protocol='json'
+            protocol='line'
         )
-        # print(self.influx_client.query("select * from example"))
 
     def create_table(self):
         try:

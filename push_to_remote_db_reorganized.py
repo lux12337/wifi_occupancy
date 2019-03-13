@@ -71,8 +71,10 @@ uri_creator: Callable[..., str] = uri.get_uri_function(uri_args['database_type']
 # apply the arguments
 uri_: str = uri_creator(**uri_args)
 
+print(uri_)
+
 """push to external db"""
 
-remote = RemoteDB(dal_or_uri=uri_)
-remote.push_to_remote(data)
-engine.delete_data_sent(data)
+# remote = RemoteDB(dal_or_uri=uri_)
+# remote.push_to_remote(data)
+# engine.delete_data_sent(data)
