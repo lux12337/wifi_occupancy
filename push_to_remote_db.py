@@ -22,7 +22,7 @@ data = engine.read_local_DB()
 
 #TODO: push to external db - add code
 remote = remote_db()
-# remote.push_to_remote_db(data)
+remote.push_to_remote_db(data)
 # engine.delete_data_sent(data)
-remote.drop_table_timescale()
+# remote.drop_table_timescale()
 # remote.drop_table()
