@@ -3,7 +3,7 @@
 *.pyc
 config.ini
 *.db
-__pycache__/*
+**/__pychache__/**/*
 logs/*
 venv/*
 .idea/*
@@ -12,6 +12,7 @@ venv/*
 **/.DS_Store
 **/*.sqlite
 **/*.table
+*.table
 **/*.db
 **/node_modules/**
 **/node_modules/*
