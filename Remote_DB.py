@@ -291,10 +291,12 @@ class remote_db():
                 self.push_to_remote_timescale(data)
 
             elif self.db_type == "influx":
+                self.print_influx_status()
                 self.push_to_influx_database(
                     data=data,
                     measurement=influx_measurement
                 )
+                self.print_influx_status()
 
             self.logger.info("push to remote successful")
 
