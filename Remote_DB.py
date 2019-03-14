@@ -222,10 +222,10 @@ class remote_db():
                     chunk_numbers == chunk_n
                 ].copy()
 
+                chunk.set_index('ts', inplace=True)
+
                 # just for debugging
                 chunk_as_dict = chunk.to_dict()
-
-                chunk.set_index('ts', inplace=True)
 
                 yield chunk
 
