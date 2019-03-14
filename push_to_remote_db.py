@@ -31,9 +31,7 @@ remote = remote_db()
 # engine.delete_data_sent(data)
 # remote.drop_table()
 # remote.test(data)
-# remote.print_influx_status()
 remote.push_to_remote_db(
     data=data, influx_measurement='wifi'
 )
 print('after push')
-# remote.print_influx_status()

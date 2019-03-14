@@ -188,9 +188,6 @@ class remote_db():
             :param data_: original data
             :return: a generator for the chunks
             """
-            # to prevent typos, use a variable
-            chunk_number_ = 'chunk-number'
-
             row_count: int = data_.shape[0]
 
             # keep track of which chunk each row belongs to.
@@ -216,12 +213,21 @@ class remote_db():
 
             last_chunk_number: int = max(repeats_per_ts.values())
 
+            # just for debugging
+            data_as_dict = data_.to_dict()
+
             for chunk_n in range(0, last_chunk_number+1):
                 chunk = data_.loc[
                     # return the rows whose chunk_number matches chunk_n
                     chunk_numbers == chunk_n
                 ].copy()
-                yield chunk.set_index('ts', inplace=True)
+
+                # just for debugging
+                chunk_as_dict = chunk.to_dict()
+
+                chunk.set_index('ts', inplace=True)
+
+                yield chunk
 
         self.safe_create_influx_database()
         self.safe_create_user(make_admin=False)
