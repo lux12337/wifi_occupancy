@@ -43,32 +43,68 @@ class remote_db():
         self.logger.info("successfully loaded config_file={}".format(self.config_file))
 
         try:
+            self.db_type = Config.get('remote_db', 'db_type')
+        except:
+            pass
+        try:
             self.host = Config.get('remote_db', 'host')
-            self.username = Config.get('remote_db', 'username')
-            self.password = Config.get('remote_db', 'password')
-            self.database = Config.get('remote_db', 'database')
+        except:
+            pass
+        try:
             self.port = Config.get('remote_db', 'port')
-        except Exception as e:
-            self.logger.error("unexpected error while setting configuration from config_file={}, error={}".format(self.config_file, str(e)))
-            raise e
+        except:
+            pass
+        try:
+            self.username = Config.get('remote_db', 'username')
+        except:
+            pass
+        try:
+            self.password = Config.get('remote_db', 'password')
+        except:
+            pass
+        try:
+            self.database = Config.get('remote_db', 'database')
+        except:
+            pass
+        try:
+            self.filename = Config.get('remote_db', 'filename')
+        except:
+            pass
 
         """
         create a connection to the remote db
         """
-
         self.create_DB_connection()
 
-
     def create_DB_connection(self):
-
         """
-        this method trys to establish a db connection
+        this method tries to establish a db connection
         """
-
         try:
-            self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
-            self.create_table()
-            # self.create_hypertable_timescale()
+            if self.db_type == "mysql":
+                self.db = DAL('mysql://{}:{}@{}:{}/{}?set_encoding=utf8mb4'.format(self.username, self.password, self.host, self.port, self.database))
+                self.create_table()
+
+            elif self.db_type == "sqlite":
+                self.db = DAL('sqlite://{}'.format(self.filename))
+                self.create_table()
+
+            elif self.db_type == "postgres":
+                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+                self.create_table()
+
+            elif self.db_type == "timescale":
+                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+                self.create_table_timescale()
+                self.create_hypertable_timescale()
+
+            elif self.db_type == "sqlite":
+                self.db = DAL('sqlite://{}'.format(self.username))
+                self.create_table()
+
+            else:
+                raise Exception('Database type string invalid.')
+
             self.logger.info("remote db connection successfully established")
 
         except Exception as e:
@@ -81,7 +117,6 @@ class remote_db():
         """
         this method creates a SQL type of table in the remote db, if it fails, it catches the warning and logs it
         """
-
         try:
             self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('time', type='datetime'))
             self.logger.info("wifi_table was created in remote db")
@@ -121,16 +156,46 @@ class remote_db():
             self.db.rollback()
             self.logger.warning("tried to create hypertable from wifi_table, returned message='{}'".format(str(e)))
 
+    def push_to_remote_db(self, data):
+        try:
+            if self.db_type == "mysql"\
+                    or self.db_type == "sqlite"\
+                    or self.db_type == "postgres":
+                self.push_to_remote(data)
+
+            elif self.db_type == "timescale":
+                self.push_to_remote_timescale(data)
+
+            elif self.db_type == "sqlite":
+                self.push_to_remote(data)
+
+            self.logger.info("push to remote successful")
+
+        except Exception as e:
+            self.logger.error("push failed")
+            raise e
 
     def push_to_remote(self, data):
-
         """
         this method pushes a pandas dataframe to the remote db
         """
-
         try:
+            print(
+                self.db.get_instances()
+            )
+            print(
+                self.db.wifi_table.as_dict()
+            )
             for i, row in data.iterrows():
-                self.db.wifi_table.insert(AP_id=row['id'], value=row['value'], time=(row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14]))
+                self.db.wifi_table.insert(
+                    AP_id=row['id'],
+                    value=row['value'],
+                    time=(
+                        row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8]
+                        + ' '
+                        + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14]
+                    )
+                )
             self.db.commit()
             self.logger.info("data successfully pushed to remote db")
 
