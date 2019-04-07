@@ -122,6 +122,7 @@ class remote_db():
             self.logger.info("wifi_table was created in remote db")
 
         except Exception as e:
+            self.db.rollback()
             self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
 
 
@@ -166,8 +167,8 @@ class remote_db():
             elif self.db_type == "timescale":
                 self.push_to_remote_timescale(data)
 
-            elif self.db_type == "sqlite":
-                self.push_to_remote(data)
+            else:
+                raise Exception('Database type string invalid.')
 
             self.logger.info("push to remote successful")
 
@@ -180,12 +181,6 @@ class remote_db():
         this method pushes a pandas dataframe to the remote db
         """
         try:
-            print(
-                self.db.get_instances()
-            )
-            print(
-                self.db.wifi_table.as_dict()
-            )
             for i, row in data.iterrows():
                 self.db.wifi_table.insert(
                     AP_id=row['id'],
@@ -234,6 +229,7 @@ class remote_db():
             self.logger.info("wifi_table successfully dropped")
 
         except Exception as e:
+            self.db.rollback()
             self.logger.error("wifi_table could not be dropped")
             raise e
 
