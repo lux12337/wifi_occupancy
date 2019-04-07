@@ -3,6 +3,8 @@ from Remote_DB import remote_db
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
+from pandas import DataFrame, to_datetime, DatetimeIndex
+from typing import Dict
 
 # @author : Marco Pritoni <mpritoni@lbl.gov>
 # @author : Anand Prakash <akprakash@lbl.gov>
@@ -18,12 +20,18 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 engine = local_db(project_path = project_path)
-data = engine.read_local_DB()
+data: DataFrame = engine.read_local_DB()
+data_as_dict = data.to_dict()
 
-#TODO: push to external db - add code
+"""push to remote db"""
+
+# TODO: push to external db - add code
 remote = remote_db()
-remote.push_to_remote_db(data)
-engine.delete_data_sent(data)
+# remote.push_to_remote(data)
+# engine.delete_data_sent(data)
 # remote.drop_table()
-# remote.drop_table_timescale()
 # remote.test(data)
+remote.push_to_remote_db(
+    data=data, influx_measurement='wifi'
+)
+print('after push')
