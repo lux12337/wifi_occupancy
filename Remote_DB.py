@@ -251,6 +251,7 @@ class remote_db():
             self.logger.info("wifi_table was created in remote db")
 
         except Exception as e:
+            self.db.rollback()
             self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
 
     def create_table_timescale(self):
@@ -297,6 +298,9 @@ class remote_db():
                     measurement=influx_measurement
                 )
                 self.print_influx_status()
+                
+            else:
+                raise Exception('Database type string invalid.')
 
             self.logger.info("push to remote successful")
 
@@ -356,6 +360,7 @@ class remote_db():
             self.logger.info("wifi_table successfully dropped")
 
         except Exception as e:
+            self.db.rollback()
             self.logger.error("wifi_table could not be dropped")
             raise e
 
