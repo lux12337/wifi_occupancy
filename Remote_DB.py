@@ -1,15 +1,12 @@
 import os
 import logging
-import pandas as pd
 from pandas import DataFrame, Series, DatetimeIndex, to_datetime, datetime
 import configparser
-import time
-import csv
 import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
 from influxdb import DataFrameClient
-from typing import Optional, Generator, List, Dict
+from typing import Optional, Generator, Dict
 
 # Luigi, Katelyn, Jasmine, Jose
 
@@ -42,36 +39,40 @@ class remote_db():
             self.logger.error("cannot find config_file={}".format(self.config_file))
             raise Exception("config file not found")
 
-        Config = configparser.ConfigParser()
-        Config.read(self.project_path+"/"+self.config_file)
+        config = configparser.ConfigParser()
+        config.read(self.project_path+"/"+self.config_file)
         self.logger.info("successfully loaded config_file={}".format(self.config_file))
 
+        """
+        Gather arguments from config file.
+        Note: some arguments are optional.
+        """
         try:
-            self.db_type = Config.get('remote_db', 'db_type')
+            self.db_type = config.get('remote_db', 'db_type')
         except:
             pass
         try:
-            self.host = Config.get('remote_db', 'host')
+            self.host = config.get('remote_db', 'host')
         except:
             pass
         try:
-            self.port = Config.get('remote_db', 'port')
+            self.port = config.get('remote_db', 'port')
         except:
             pass
         try:
-            self.username = Config.get('remote_db', 'username')
+            self.username = config.get('remote_db', 'username')
         except:
             pass
         try:
-            self.password = Config.get('remote_db', 'password')
+            self.password = config.get('remote_db', 'password')
         except:
             pass
         try:
-            self.database = Config.get('remote_db', 'database')
+            self.database = config.get('remote_db', 'database')
         except:
             pass
         try:
-            self.filename = Config.get('remote_db', 'filename')
+            self.filename = config.get('remote_db', 'filename')
         except:
             pass
 
@@ -131,7 +132,7 @@ class remote_db():
         print(self.influx_client.get_list_database())
         print(self.influx_client.get_list_measurements())
         print(self.influx_client.get_list_users())
-        print(self.influx_client.get_list_privileges(username=self.username))
+        # print(self.influx_client.get_list_privileges(username=self.username))
         # print(self.influx_client.query('select * from "wifi"').items())
 
     def safe_create_influx_database(self) -> None:
@@ -232,14 +233,14 @@ class remote_db():
         self.safe_create_influx_database()
         self.safe_create_user(make_admin=False)
 
-        data = preprocess_data(data)
+        data: DataFrame = preprocess_data(data)
 
         for chunk in data_chunks(data):
             self.influx_client.write_points(
                 dataframe=chunk,
                 measurement=measurement,
                 database=self.database,
-                protocol='line'
+                tag_columns=['id']
             )
 
     def create_table(self):

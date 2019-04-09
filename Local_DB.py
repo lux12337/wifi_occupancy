@@ -4,7 +4,6 @@ from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
-import json
 import configparser
 import datetime
 
