@@ -3,10 +3,17 @@ from Remote_DB import remote_db
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
+from pandas import DataFrame
+from typing import Dict
 
 # @author : Marco Pritoni <mpritoni@lbl.gov>
 # @author : Anand Prakash <akprakash@lbl.gov>
+
+"""set the project path"""
+
 project_path = os.path.dirname(os.path.realpath(__file__))
+
+"""set up logging"""
 
 logger = logging.getLogger("push_to_melrok")
 logger.setLevel(logging.DEBUG)
@@ -17,13 +24,17 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-engine = local_db(project_path = project_path)
-data = engine.read_local_DB()
+"""acquire data to push"""
 
-#TODO: push to external db - add code
+# Get the data (as a DataFrame) from the local database.
+engine = local_db( project_path=project_path )
+data: DataFrame = engine.read_local_DB()
+
+"""push to the remote db"""
+
 remote = remote_db()
-remote.push_to_remote(data)
+remote.push_to_remote_db(
+    data=data, influx_measurement='wifi_table'
+)
 engine.delete_data_sent(data)
-# remote.drop_table()
-# remote.drop_table_timescale()
-# remote.test(data)
+print('Success')
