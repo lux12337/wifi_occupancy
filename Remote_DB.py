@@ -127,14 +127,6 @@ class remote_db():
         )
         return self.influx_client
 
-    def print_influx_status(self) -> None:
-        print(self.influx_client.ping())
-        print(self.influx_client.get_list_database())
-        print(self.influx_client.get_list_measurements())
-        print(self.influx_client.get_list_users())
-        # print(self.influx_client.get_list_privileges(username=self.username))
-        # print(self.influx_client.query('select * from "wifi"').items())
-
     def safe_create_influx_database(self) -> None:
         """
         Creates a new influx database with database_name.
@@ -214,9 +206,6 @@ class remote_db():
 
             last_chunk_number: int = max(repeats_per_ts.values())
 
-            # just for debugging
-            data_as_dict = data_.to_dict()
-
             for chunk_n in range(0, last_chunk_number+1):
                 chunk = data_.loc[
                     # return the rows whose chunk_number matches chunk_n
@@ -224,9 +213,6 @@ class remote_db():
                 ].copy()
 
                 chunk.set_index('ts', inplace=True)
-
-                # just for debugging
-                chunk_as_dict = chunk.to_dict()
 
                 yield chunk
 
@@ -293,13 +279,11 @@ class remote_db():
                 self.push_to_remote_timescale(data)
 
             elif self.db_type == "influx":
-                self.print_influx_status()
                 self.push_to_influx_database(
                     data=data,
                     measurement=influx_measurement
                 )
-                self.print_influx_status()
-                
+
             else:
                 raise Exception('Database type string invalid.')
 

@@ -30,14 +30,11 @@ logger.addHandler(handler)
 engine = local_db( project_path=project_path )
 data: DataFrame = engine.read_local_DB()
 
-# (easily view as a dictionary for debugging)
-data_as_dict: Dict = data.to_dict()
-
 """push to the remote db"""
 
 remote = remote_db()
 remote.push_to_remote_db(
-    data=data, influx_measurement='wifi'
+    data=data, influx_measurement='wifi_table'
 )
-# engine.delete_data_sent(data)
-print('after push')
+engine.delete_data_sent(data)
+print('Success')
