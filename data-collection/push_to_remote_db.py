@@ -33,8 +33,7 @@ data: DataFrame = engine.read_local_DB()
 """push to the remote db"""
 
 remote = remote_db()
-remote.push_to_remote_db(
-    data=data, influx_measurement='wifi_table'
-)
+remote.push_to_remote_db(data=data)
+# remote.drop_table()
 engine.delete_data_sent(data)
 print('Success')

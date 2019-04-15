@@ -75,6 +75,10 @@ class remote_db():
             self.filename = config.get('remote_db', 'filename')
         except:
             pass
+        try:
+            self.table_name = config.get('remote_db', 'table_name')
+        except:
+            pass
 
         """
         create a connection to the remote db
@@ -127,27 +131,12 @@ class remote_db():
         )
         return self.influx_client
 
-    def safe_create_influx_database(self) -> None:
-        """
-        Creates a new influx database with database_name.
-        If one already exists, then nothing happens.
-        """
-        # The CREATE DATABASE command does nothing if the database
-        # already exists. Hopefully, this client's method acts similarly.
-        self.influx_client.create_database(self.database)
-
-    def safe_create_user(self, make_admin: bool = False) -> None:
-        self.influx_client.create_user(
-            username=self.username,
-            password=self.password,
-            admin=make_admin
-        )
 
     def push_to_influx_database(
         self, data: DataFrame, measurement: str
     ) -> None:
         """
-        Will create database if it doesn't exist, then push to it.
+        Push dataframe to database.
         :param data: pandas DataFrame indexed by timestamp
         :param measurement: the name of this measurement
         :return:
@@ -216,8 +205,6 @@ class remote_db():
 
                 yield chunk
 
-        self.safe_create_influx_database()
-        self.safe_create_user(make_admin=False)
 
         data: DataFrame = preprocess_data(data)
 
@@ -234,41 +221,56 @@ class remote_db():
         this method creates a SQL type of table in the remote db, if it fails, it catches the warning and logs it
         """
         try:
-            self.db.define_table('wifi_table', Field('AP_id'), Field('value'), Field('time', type='datetime'))
-            self.logger.info("wifi_table was created in remote db")
+            self.db.define_table(self.table_name, Field('AP_id'), Field('value'), Field('time', type='datetime'))
+            self.logger.info("{} was created in remote db".format(self.table_name))
 
         except Exception as e:
             self.db.rollback()
-            self.logger.warning("wifi_table could already exist, return message '{}'".format(str(e)))
+            self.logger.warning(
+                "{} could already exist, return message '{}'".format(
+                    str(e), self.table_name
+                )
+            )
 
     def create_table_timescale(self):
         """
         this method creates a postgres table in preparation for a hypertable in timescale
         """
         try:
-            self.db.executesql("CREATE TABLE IF NOT EXISTS wifi_table(time TIMESTAMP, AP_id CHAR(512), value CHAR(512));")
+            self.db.executesql(
+                "CREATE TABLE IF NOT EXISTS {}(time TIMESTAMP, AP_id CHAR(512), value CHAR(512));".format(
+                    self.table_name
+                )
+            )
             self.db.commit()
-            self.logger.info("wifi_table created in remote db")
+            self.logger.info("{} created in remote db".format(self.table_name))
 
         except Exception as e:
-            self.logger.warning("creation of wifi_table failed, error='{}'".format(str(e)))
+            self.logger.warning("creation of {} failed, error='{}'".format(
+                self.table_name, str(e))
+            )
             raise e
 
     def create_hypertable_timescale(self):
-
         """
-        this method tries to turn wifi_table into a hypertable, and it if it fails, it will catch the warning and rollback the commit
+        this method tries to turn the table into a hypertable, and it if it fails, it will catch the warning and rollback the commit
         """
         try:
-            self.db.executesql("SELECT create_hypertable('wifi_table', 'time');")
+            self.db.executesql(
+                "SELECT create_hypertable('{}', 'time');".format(self.table_name)
+            )
             self.db.commit()
-            self.logger.info("successfully created hypertable from wifi_table")
+            self.logger.info(
+                "successfully created hypertable from {}".format(self.table_name)
+            )
 
         except Exception as e:
             self.db.rollback()
-            self.logger.warning("tried to create hypertable from wifi_table, returned message='{}'".format(str(e)))
+            self.logger.warning("tried to create hypertable from {}, returned message='{}'".format(
+                self.table_name, str(e))
+            )
 
-    def push_to_remote_db(self, data: DataFrame, influx_measurement: Optional[str] = None):
+    def push_to_remote_db(self, data: DataFrame):
         try:
             if self.db_type == "mysql"\
                     or self.db_type == "sqlite"\
@@ -281,9 +283,8 @@ class remote_db():
             elif self.db_type == "influx":
                 self.push_to_influx_database(
                     data=data,
-                    measurement=influx_measurement
+                    measurement=self.table_name
                 )
-
             else:
                 raise Exception('Database type string invalid.')
 
@@ -299,7 +300,7 @@ class remote_db():
         """
         try:
             for i, row in data.iterrows():
-                self.db.wifi_table.insert(
+                self.db[self.table_name].insert(
                     AP_id=row['id'],
                     value=row['value'],
                     time=(
@@ -315,7 +316,6 @@ class remote_db():
             self.logger.error("pushing to remote database failed")
             raise e
 
-
     def push_to_remote_timescale(self, data):
 
         """
@@ -323,10 +323,13 @@ class remote_db():
         """
 
         try:
-            #self.db.executesql("COPY wifi_table(time, ap_id, value) FROM './temp_data.csv' DELIMITER ',' CSV HEADER;")
             for i, row in data.iterrows():
                 time = (row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14])
-                self.db.executesql("INSERT INTO wifi_table VALUES('{}', '{}', '{}')".format(time, row['id'], row['value']))
+                self.db.executesql(
+                    "INSERT INTO {} VALUES('{}', '{}', '{}')".format(
+                        self.table_name, time, row['id'], row['value']
+                    )
+                )
             self.db.commit()
             self.logger.info("data successfully pushed to remote db")
 
@@ -337,31 +340,37 @@ class remote_db():
     def drop_table(self):
 
         """
-        this method drops wifi_table from a SQL remote db
+        this method drops the table from a SQL remote db
         """
 
         try:
-            self.db.wifi_table.drop()
-            self.logger.info("wifi_table successfully dropped")
+            self.db[self.table_name].drop()
+            self.logger.info(
+                "{} successfully dropped".format(self.table_name)
+            )
 
         except Exception as e:
             self.db.rollback()
-            self.logger.error("wifi_table could not be dropped")
+            self.logger.error("{} could not be dropped".format(self.table_name))
             raise e
 
     def drop_table_timescale(self):
 
         """
-        this method drops wifi_table from a timescale remote db
+        this method drops the table from a timescale remote db
         """
 
         try:
-            self.db.executesql('DROP TABLE wifi_table;')
+            self.db.executesql('DROP TABLE {};'.format(self.table_name))
             self.db.commit()
-            self.logger.info("wifi_table successfully dropped")
+            self.logger.info("{} successfully dropped".format(self.table_name))
 
         except Exception as e:
-            self.logger.warning("wifi_table could not be dropped, returned message='{}'".format(str(e)))
+            self.logger.warning(
+                "{} could not be dropped, returned message='{}'".format(
+                    self.table_name, str(e)
+                )
+            )
 
 
 if __name__ == '__main__':
