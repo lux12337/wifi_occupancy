@@ -48,6 +48,34 @@ sudo timescaledb-tune
 ```bash
 sudo service postgresql restart
 ```
+
+### Postgres
+##### Key Components
+* Timescale is built ontop of postgres so you will need to install the same techonolgoies as Timescale
+
+##### Setting up
+1. To run the libary scrips
+```bash
+docker build -t wifi-script .
+docker run wifi-script
+docker run -it wifi-script /bin/bash
+```
+2. Start the timescale scale database:
+```bash
+docker run -d --timescaledb -p 5432:5432 -e POSTGRES_PASSWORD=123 timescale/timeescaledb:latest-pg11
+```
+3. To create a database in the Docker container run in PowerShell:
+```bash
+docker exec -ti timescaledb /bin/bash  //access server through the docker
+psql -U postgres
+create database alphademodb; //don’t forget the ;
+```
+4. Execute python commands
+```bash
+python get_wifi_data.py
+python push_to_remote_db.py
+```
+
 ### Influx
 ##### Key Components
 * Database was set in a Docker image
