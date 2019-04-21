@@ -20,3 +20,7 @@ venv/*
 **/web-server/**/*.js
 analytics-apps/wifi_data_until_20190204\.csv
 **/logs/
+**/.ipynb_checkpoints/
+
+# Excel Workbooks
+*.xlsx
