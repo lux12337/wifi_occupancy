@@ -1,13 +1,14 @@
 import pandas as pd
-from typing import Optional
+from typing import Optional,List
 
-# Converts time format (string) to a number(float) in 24 hour format
-def time_to_int(str):
-	t = str.split('-')[2].split(' ')[1].split(':')[0]
-	return float(t)
 
-# Takes in wifi_data's column (list) and a name/keyword of a building (string) to find its accesspoints
-def get_building_accesspoints(lis, bui):
+def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
+	"""
+	Takes in wifi_data's column (list) and 
+	a name/keyword of a building (string) 
+	to find its access points
+	:return: list of string
+	"""
 	ret = []
 	for i in lis:
 		if bui in i:
