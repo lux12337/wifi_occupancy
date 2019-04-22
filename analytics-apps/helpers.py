@@ -1,10 +1,6 @@
 import pandas as pd
 from typing import Optional
 
-# def getData(filename):
-#     data = pd.read_csv(filename)
-#     return data
-
 # Converts time format (string) to a number(float) in 24 hour format
 def time_to_int(str):
 	t = str.split('-')[2].split(' ')[1].split(':')[0]
