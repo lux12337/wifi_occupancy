@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Optional,List
+from typing import Optional, List
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -16,7 +16,7 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
 	return ret    
 
 
-def csv_to_dataframe(filepath: str, nrows: Optional[int]) -> pd.DataFrame:
+def csv_to_dataframe(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
 	"""
 	Loads data from a csv into a pandas dataframe.
 	The csv is expected to have a datetime-formattable string in the first column.
