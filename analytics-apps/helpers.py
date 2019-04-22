@@ -15,6 +15,6 @@ def get_building_accesspoints(lis, bui):
 	for i in lis:
 		if bui in i:
 			ret.append(i)
-	return ret    
+	return ret
 
-	
+# Get subset data for a specific builiding 
