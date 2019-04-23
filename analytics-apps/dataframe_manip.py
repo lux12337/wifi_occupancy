@@ -4,8 +4,8 @@ from typing import Optional, List, Dict
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
 	"""
-	Takes in wifi_data's column (list) and 
-	a name/keyword of a building (string) 
+	Takes in wifi_data's column (list) and
+	a name/keyword of a building (string)
 	to find its access points
 	:return: list of string
 	"""
@@ -40,6 +40,27 @@ def csv_to_dataframe(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame
 	)
 
 	return data
+
+
+def get_hourly_data_building(data, building_name):
+	"""
+	Extracts all the APs present in a building and fills NaN with 0.
+	Sets index to datetime and adjusts for timezone. Then it calculates
+	the hourly mean occupancy of each AP.
+
+	:input:
+		data 			-> dataframe output from csv_to_dataframe
+		building_name 	-> specific building name in string(eg. 'SCC')
+	:return:
+		pandas dataframe
+	"""
+
+	building = data[get_building_accesspoints(data, building_name)].fillna(0).copy()
+	building.index = pd.to_datetime(building.index, utc=True)
+	building = building.resample('H').mean()
+
+	return building
+
 
 if __name__ == '__main__':
 	data: pd.DataFrame = csv_to_dataframe('./wifi_data_until_20190204.csv')
