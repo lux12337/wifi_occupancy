@@ -9,12 +9,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="whitegrid")
 import pandas as pd
 
-import plotly.plotly as py
-import plotly.graph_objs as go
-from plotly.tools import FigureFactory as FF
-from plotly import tools
-import json
-
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from dataframe_manip import get_building_accesspoints,csv_to_dataframe
