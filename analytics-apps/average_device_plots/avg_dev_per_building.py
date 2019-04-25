@@ -2,7 +2,8 @@
 # coding: utf-8
 
 # In[1]:
-
+import sys
+sys.path.append('..')
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ from dataframe_manip import get_building_accesspoints,csv_to_dataframe
 
 
 # Get data from csv  file; Try not to modify it!!!
-wifi_df = pd.read_csv('wifi_data_until_20190204.csv',
+wifi_df = pd.read_csv('..\wifi_data_until_20190204.csv',
                       infer_datetime_format=True,
                       index_col=False)
 

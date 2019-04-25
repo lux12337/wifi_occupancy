@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+
+ASSUMES CSV FILE AND 
+DATAFRAM_MANIP (OUR FILE) 
+ARE ONE DIRECTORY ABOVE.
+
+"""
+
 
 # In[41]:
-
+import sys
+sys.path.append('..')    
 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="whitegrid")
 import pandas as pd
 
-import plotly.plotly as py
-import plotly.graph_objs as go
-from plotly.tools import FigureFactory as FF
-from plotly import tools
-import json
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -96,7 +100,7 @@ def get_building_df(building_name,df):
 print('MAY TAKE A FEW MINUTES TO PROCESS')
 
 # Get data from csv  file; Try not to modify it!!!
-wifi_df = pd.read_csv('wifi_data_until_20190204.csv',
+wifi_df = pd.read_csv('..\wifi_data_until_20190204.csv',
                       infer_datetime_format=True,
                       index_col=False)
 
