@@ -1,5 +1,8 @@
+from typing import Optional, List
+import numpy as np
 import pandas as pd
-from typing import Optional, List, Dict
+import seaborn
+import matplotlib.pyplot as plt
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -27,22 +30,54 @@ def csv_to_dataframe(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame
 	# Assumptions
 	time_col_index: int = 0
 
-	data: pd.DataFrame = pd.read_csv(
+	dataframe: pd.DataFrame = pd.read_csv(
 		filepath_or_buffer=filepath,
-		# Instead of filtering na's, replace them with fillna()
+		# This csv includes na values, which should be
 		na_filter=True,
-		# time column
+		# parse the time column and make it the index
 		index_col=time_col_index,
-		parse_dates=[time_col_index],
-		infer_datetime_format=True,
+		parse_dates=True,
+		date_parser=lambda col: pd.to_datetime(col, utc=True),
 		# how many rows to read in
 		nrows=nrows
 	)
 
-	return data
+	if not isinstance(dataframe.index, pd.DatetimeIndex):
+		dataframe.index = pd.to_datetime(
+			dataframe.index, utc=True
+		)
+
+	return dataframe
+
+
+def occupancy_totals_timeseries(df: pd.DataFrame) -> pd.DataFrame:
+
+	total_occupancy_vs_time = df.sum(
+		# sum across columns.
+		axis=1,
+		# treat na values as 0
+		skipna=True,
+		# skip non-numeric columns
+		numeric_only=True
+	)
+
+	return total_occupancy_vs_time
+
 
 if __name__ == '__main__':
-	data: pd.DataFrame = csv_to_dataframe('./wifi_data_until_20190204.csv')
+	data: pd.DataFrame = csv_to_dataframe(
+		filepath='./wifi_data_until_20190204.csv'
+	)
 	print(data.columns)
 	print(data.dtypes)
 	print(data.index)
+	print(data.index.dtype)
+	print(data.shape)
+
+	data_collapsed = occupancy_totals_timeseries(data)
+	print(data_collapsed.size)
+
+	ts = pd.Series(data_collapsed, index=data_collapsed.index)
+
+	fig, ax = plt.subplots(figsize=(2, 5))
+	seaborn.boxplot(data_collapsed.index.hour, data_collapsed, ax=ax)
