@@ -19,7 +19,7 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
 	return ret
 
 
-def csv_to_dataframe(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
+def csv_to_timeseries_df(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
 	"""
 	Loads data from a csv into a pandas dataframe.
 	The csv is expected to have a datetime-formattable string in the first column.
@@ -50,9 +50,15 @@ def csv_to_dataframe(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame
 	return dataframe
 
 
-def occupancy_totals_timeseries(df: pd.DataFrame) -> pd.DataFrame:
-
-	total_occupancy_vs_time = df.sum(
+def row_totals(df: pd.DataFrame) -> pd.DataFrame:
+	"""
+	Accepts a timeseries dataframe like the one returned by csv_to_timeseries_df
+	and sums across the columns to create a 1-column timeseries dataframe of
+	row sums.
+	:param df: a dataframe with numeric columns.
+	:return: a 1-dimensional dataframe of totals per row.
+	"""
+	total_vs_time = df.sum(
 		# sum across columns.
 		axis=1,
 		# treat na values as 0
@@ -61,11 +67,11 @@ def occupancy_totals_timeseries(df: pd.DataFrame) -> pd.DataFrame:
 		numeric_only=True
 	)
 
-	return total_occupancy_vs_time
+	return total_vs_time
 
 
 if __name__ == '__main__':
-	data: pd.DataFrame = csv_to_dataframe(
+	data: pd.DataFrame = csv_to_timeseries_df(
 		filepath='./wifi_data_until_20190204.csv'
 	)
 	print(data.columns)
@@ -74,7 +80,7 @@ if __name__ == '__main__':
 	print(data.index.dtype)
 	print(data.shape)
 
-	data_collapsed = occupancy_totals_timeseries(data)
+	data_collapsed = row_totals(data)
 	print(data_collapsed.size)
 
 	ts = pd.Series(data_collapsed, index=data_collapsed.index)
