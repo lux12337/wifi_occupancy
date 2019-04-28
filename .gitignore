@@ -24,3 +24,7 @@ analytics-apps/wifi_data_until_20190204.csv
 
 # Excel Workbooks
 *.xlsx
+
+# Jupyter PDF Exports
+*.tex
+output_*.png
