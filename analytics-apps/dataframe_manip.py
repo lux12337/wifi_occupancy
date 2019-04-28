@@ -42,19 +42,16 @@ def csv_to_timeseries_df(filepath: str, nrows: Optional[int] = None) -> pd.DataF
 		nrows=nrows
 	)
 
-	if not isinstance(dataframe.index, pd.DatetimeIndex):
-		dataframe.index = pd.to_datetime(
-			dataframe.index, utc=True
-		)
+	# if not isinstance(dataframe.index, pd.DatetimeIndex):
+	# 	dataframe.index = pd.to_datetime(
+	# 		dataframe.index, utc=True
+	# 	)
 
 	return dataframe
 
 
 def row_totals(df: pd.DataFrame) -> pd.DataFrame:
 	"""
-	Accepts a timeseries dataframe like the one returned by csv_to_timeseries_df
-	and sums across the columns to create a 1-column timeseries dataframe of
-	row sums.
 	:param df: a dataframe with numeric columns.
 	:return: a 1-dimensional dataframe of totals per row.
 	"""
@@ -66,8 +63,57 @@ def row_totals(df: pd.DataFrame) -> pd.DataFrame:
 		# skip non-numeric columns
 		numeric_only=True
 	)
-
 	return total_vs_time
+
+
+def column_totals(df: pd.DataFrame) -> pd.DataFrame:
+	"""
+	:param df: a dataframe with numeric columns.
+	:return: a 1-dimensional dataframe of totals per column.
+	"""
+	sum_per_column = df.sum(
+		# sum across rows.
+		axis=0,
+		# treat na values as 0
+		skipna=True,
+		# skip non-numeric columns
+		numeric_only=True
+	)
+	return sum_per_column
+
+
+def column_means(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+	"""
+	:param df: a dataframe with numeric columns.
+	:param skipna: should missing values be skipped?
+	:return: a 1-dimensional dataframe of means per column.
+	"""
+	mean_per_column = df.mean(
+		# operate across rows.
+		axis=0,
+		# treat na values as 0
+		skipna=skipna,
+		# skip non-numeric columns
+		numeric_only=True
+	)
+	return mean_per_column
+
+
+def column_medians(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+	"""
+	:param df: a dataframe with numeric columns.
+	:param skipna: should missing values be skipped?
+	:return: a 1-dimensional dataframe of medians per column.
+	"""
+	median_per_column = df.median(
+		# operate across rows.
+		axis=0,
+		# treat na values as 0
+		skipna=skipna,
+		# skip non-numeric columns
+		numeric_only=True
+	)
+	return median_per_column
 
 
 if __name__ == '__main__':
