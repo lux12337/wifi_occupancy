@@ -20,24 +20,24 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
 	return ret
 
 
-college_pattern: re.Pattern = re.compile(
+college_pattern = re.compile(
 	'^\\w+'
 )
 
 
-building_pattern: re.Pattern = re.compile(
+building_pattern = re.compile(
 	'\\w+\\d*'
 	+ '(-\\w*\\d*)*'
 )
 
 
-acpt_pattern: re.Pattern = re.compile(
+acpt_pattern = re.compile(
 	'AP\\d*'
 	+ '(-\\d*)*'
 )
 
 
-col_name_pattern: re.Pattern = re.compile(
+col_name_pattern = re.compile(
 	'^'
 	# college
 	+ '\\w+'
