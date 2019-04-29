@@ -16,4 +16,5 @@ scc_building['weekday'] = scc_building.index.weekday
 
 #monday = scc_building[['weekday'] == 0]
 
-print(scc_building)
+day = [0]
+print(scc_building[scc_building['weekday'].isin(day)])

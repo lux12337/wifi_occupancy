@@ -62,6 +62,31 @@ def get_hourly_data_building(data, building_name):
 	return building
 
 
+def get_daily_average(data, building_name):
+	"""
+	Adds the UTC offset in the datetime index. Sums all the APs together in column 'y',
+	and calculates the daily average occupancy from 'y'. Removes offset string after
+	calculations. Changes 'time' from an index to a column.
+
+	:input:
+		data 			-> dataframe output from csv_to_dataframe
+		building_name 	-> specific building name in string(eg. 'SCC')
+	:return:
+		pandas dataframe
+	"""
+
+	building = data[hp.get_building_accesspoints(data, building_name)].copy()
+	building.index = pd.to_datetime(alexander.index, utc=True)
+	building['y'] = building.sum(axis=1)
+	building = building.resample('D').mean()
+	building = building['y']
+	building = pd.DataFrame(building).reset_index()
+	building.columns = ['ds', 'y']
+	building['ds'] = building['ds'].astype(str).str[:-15]
+
+	return building
+
+
 if __name__ == '__main__':
 	data: pd.DataFrame = csv_to_dataframe('./wifi_data_until_20190204.csv')
 	print(data.columns)
