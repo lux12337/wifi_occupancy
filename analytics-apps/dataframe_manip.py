@@ -75,7 +75,7 @@ def get_daily_average(data, building_name):
 		pandas dataframe
 	"""
 
-	building = data[hp.get_building_accesspoints(data, building_name)].copy()
+	building = data[get_building_accesspoints(data, building_name)].copy()
 	building.index = pd.to_datetime(alexander.index, utc=True)
 	building['y'] = building.sum(axis=1)
 	building = building.resample('D').mean()
