@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn
 import matplotlib.pyplot as plt
 import re
+import pytz
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -86,7 +87,11 @@ def col_names_to_building_indices(col_names: List[str]) -> List[int]:
     return groupids
 
 
-def csv_to_timeseries_df(filepath: str, nrows: Optional[int] = None) -> pd.DataFrame:
+def csv_to_timeseries_df(
+    filepath: str,
+    nrows: Optional[int] = None,
+    timezone: Optional[pytz.timezone] = None
+) -> pd.DataFrame:
     """
     Loads data from a csv into a pandas dataframe.
     The csv is expected to have a datetime-formattable string in the first column.
@@ -109,10 +114,8 @@ def csv_to_timeseries_df(filepath: str, nrows: Optional[int] = None) -> pd.DataF
         nrows=nrows
     )
 
-    # if not isinstance(dataframe.index, pd.DatetimeIndex):
-    # 	dataframe.index = pd.to_datetime(
-    # 		dataframe.index, utc=True
-    # 	)
+    if timezone is not None:
+        dataframe.index = dataframe.index.tz_convert(timezone)
 
     return dataframe
 
