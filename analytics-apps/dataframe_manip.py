@@ -22,29 +22,22 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
 
 
 college_pattern = re.compile(
-    '^\\w+'
+    r"^\w+"
 )
 
 building_pattern = re.compile(
-    '\\w+\\d*'
-    + '(-\\w*\\d*)*'
+    r"\w+\d*(-\w*\d*)*"
 )
 
 acpt_pattern = re.compile(
-    'AP\\d*'
-    + '(-\\d*)*'
+    r"AP\d*(-\d*)*"
 )
 
 col_name_pattern = re.compile(
     '^'
-    # college
-    + '\\w+'
-    + '-'
-    # building
-    + '\\w+\d*' + '(-\\w*\\d*)*'
-    # access point tag
-    + '-'
-    + 'AP\\d*' + '(-\\d*)*'
+    + college_pattern.pattern
+    + '-' + building_pattern.pattern
+    + '-' + acpt_pattern.pattern
     + '$'
 )
 
@@ -56,14 +49,11 @@ def col_name_to_building(col_name: str) -> Union[str, None]:
     :return: the building name substring or None if something went wrong.
     """
 
-    buildings: List[str] = re.findall(
+    building = re.match(
         building_pattern, col_name
     )
 
-    if len(buildings) != 1:
-        return None
-
-    return buildings[0]
+    return building
 
 
 def col_names_to_building_indices(col_names: List[str]) -> List[int]:
@@ -74,7 +64,7 @@ def col_names_to_building_indices(col_names: List[str]) -> List[int]:
     groupids: List[int] = []
 
     building_names: Set[str] = set({})
-    i = -1
+    i = 0
 
     for b in col_names:
         if b in building_names:
@@ -82,7 +72,8 @@ def col_names_to_building_indices(col_names: List[str]) -> List[int]:
         else:
             bn = col_name_to_building(b)
             building_names.add(bn)
-            groupids.append(++i)
+            groupids.append(i)
+            i = i + 1
 
     return groupids
 
