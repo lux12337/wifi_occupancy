@@ -1,9 +1,6 @@
-from typing import Optional, List, Union, Set
+from typing import Optional, List, Union, Dict, NamedTuple
 import numpy as np
 import pandas as pd
-import seaborn
-import matplotlib.pyplot as plt
-import re
 import pytz
 
 
@@ -21,59 +18,59 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
     return ret
 
 
-college_pattern = re.compile(
-    r"^\w+"
-)
-
-building_pattern = re.compile(
-    r"\w+\d*(-\w*\d*)*"
-)
-
-acpt_pattern = re.compile(
-    r"AP\d*(-\d*)*"
-)
-
-col_name_pattern = re.compile(
-    '^'
-    + college_pattern.pattern
-    + '-' + building_pattern.pattern
-    + '-' + acpt_pattern.pattern
-    + '$'
-)
+class ColNameComponents(NamedTuple):
+    college: str
+    building: str
+    acpt_num: str
 
 
-def col_name_to_building(col_name: str) -> Union[str, None]:
+def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
     """
-    # TODO test
     :param col_name: name of a column in the csv
     :return: the building name substring or None if something went wrong.
     """
 
-    building = re.match(
-        building_pattern, col_name
-    )
+    split_by_AP: List[str] = col_name.split('-AP')
 
-    return building
+    # Fail if there is no '-AP' substring or too many.
+    if len(split_by_AP) != 2:
+        return None
+
+    index_of_first_dash: int = split_by_AP[0].find('-')
+
+    if index_of_first_dash == -1:
+        return None
+
+    college: str = split_by_AP[0][0:index_of_first_dash].strip()
+    building: str = split_by_AP[0][index_of_first_dash+1:].strip()
+    acpt: str = split_by_AP[1].strip()
+
+    return ColNameComponents(college=college, building=building, acpt_num=acpt)
 
 
-def col_names_to_building_indices(col_names: List[str]) -> List[int]:
+def col_names_to_building_indices(
+    col_names: List[str]
+) -> Union[np.ndarray, None]:
     """
     :param col_names:
     :return:
     """
-    groupids: List[int] = []
+    groupids: np.ndarray = np.zeros(len(col_names))
 
-    building_names: Set[str] = set({})
-    i = 0
+    building_names: Dict[str, int] = {}
+    unique_count = 0
 
-    for b in col_names:
-        if b in building_names:
-            groupids.append(i)
-        else:
-            bn = col_name_to_building(b)
-            building_names.add(bn)
-            groupids.append(i)
-            i = i + 1
+    for i in range(0, len(col_names)):
+
+        comps: Union[None, ColNameComponents] = decompose_col_name(col_names[i])
+
+        if comps is None:
+            return None
+
+        if comps.building not in building_names:
+            building_names[comps.building] = unique_count = unique_count + 1
+
+        groupids[i] = building_names[comps.building]
 
     return groupids
 
@@ -250,4 +247,4 @@ if __name__ == '__main__':
         data.columns
     )
 
-    print(list(filter(lambda x: x is None, building_indices)))
+    print(building_indices)
