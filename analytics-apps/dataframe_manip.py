@@ -41,6 +41,8 @@ def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
     if index_of_first_dash == -1:
         return None
 
+    # TODO get rid of number after building.
+
     college: str = split_by_AP[0][0:index_of_first_dash].strip()
     building: str = split_by_AP[0][index_of_first_dash+1:].strip()
     acpt: str = split_by_AP[1].strip()
