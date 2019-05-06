@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pytz
 import re
+import math
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -66,7 +67,7 @@ def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
 
 
 def col_names_to_building_indices(
-    col_names: List[str]
+        col_names: List[str]
 ) -> Union[np.ndarray, None]:
     """
     :param col_names:
@@ -105,9 +106,9 @@ def col_names_to_building_names(col_names: List[str]) -> Set[str]:
 
 
 def csv_to_timeseries_df(
-    filepath: str,
-    nrows: Optional[int] = None,
-    timezone: Optional[pytz.timezone] = None
+        filepath: str,
+        nrows: Optional[int] = None,
+        timezone: Optional[pytz.timezone] = None
 ) -> pd.DataFrame:
     """
     Loads data from a csv into a pandas dataframe.
@@ -135,6 +136,47 @@ def csv_to_timeseries_df(
         dataframe.index = dataframe.index.tz_convert(timezone)
 
     return dataframe
+
+
+def fill_intervening_nas(
+        df_or_series: Union[pd.DataFrame, pd.Series],
+        inplace: bool = False,
+        fill_val: any = 0
+) -> Union[pd.DataFrame, pd.Series]:
+
+    if not inplace:
+        df_or_series = df_or_series.copy(deep=True)
+
+    def fill_series(series: pd.Series) -> pd.Series:
+
+        if not series.hasnans:
+            return series
+
+        na_map = series.isna()
+        not_na_map = ~na_map
+
+        not_na_indices = np.where(not_na_map)[0]
+        first_not_na = not_na_indices[0]
+        last_not_na = not_na_indices[-1]
+
+        # Start with the na_map.
+        intervening_na_map = na_map
+        # Eliminate initial and trailing na's.
+        intervening_na_map.loc[:first_not_na] = False
+        intervening_na_map.loc[last_not_na+1:] = False
+
+        series.loc[intervening_na_map] = fill_val
+
+        return series
+
+    if isinstance(df_or_series, pd.Series):
+        return fill_series(df_or_series)
+
+    df_or_series.apply(
+        func=lambda ser: ser if isinstance(ser, pd.Index) else fill_series(ser),
+        axis=0
+    )
+    return df_or_series
 
 
 def row_totals(df: pd.DataFrame) -> pd.DataFrame:
@@ -264,36 +306,55 @@ def column_quartiles(
 
 if __name__ == '__main__':
     data: pd.DataFrame = csv_to_timeseries_df(
-        filepath='./wifi_data_until_20190204.csv'
+        filepath='./wifi_data_until_20190204.csv',
+        timezone=pytz.timezone('US/Pacific')
     )
-    print(data.columns)
-    print(data.dtypes)
-    print(data.index)
-    print(data.index.dtype)
-    print(data.shape)
+    fill_intervening_nas(df_or_series=data, inplace=True, fill_val=0)
+    # print(data.columns)
+    # print(data.dtypes)
+    # print(data.index)
+    # print(data.index.dtype)
+    # print(data.shape)
+    #
+    # building_indices = col_names_to_building_indices(data.columns)
+    #
+    # print(building_indices)
+    #
+    # auto_names = col_names_to_building_names(data.columns)
+    # manual_names = {
+    #     'POMONA', '118-8TH', '1567TH', '345C',
+    #     'ALEXANDER', 'ANDREW', 'BALDWIN', 'BRACKETT', 'BRIDGES', 'CARNEGIE',
+    #     'CLARK3', 'CLARKI', 'CLARKV', 'CROOKSHANK',
+    #     'DRAPER', 'FARM', 'FRANK', 'FRARY', 'GIBONEY', 'GIBSON', 'GROUNDS',
+    #     'HAHN', 'HALDEMAN', 'HARWOOD', 'ITB', 'KENYON', 'LAWRY', 'LEB', 'LEBUS',
+    #     'MASON', 'MCCARTHY', 'MERRIT', 'MILLIKAN', 'MUSEUM', 'NORTON',
+    #     'OLDENBORG', 'PAULEY', 'PEARSON', 'PENDLETON', 'POMONA', 'RAINS',
+    #     'REMBRANDT', 'SCC', 'SEAVER', 'SGM', 'SMILEY', 'SMITH', 'SONTAG',
+    #     'STUDIOART', 'SUMNER', 'THATCHER', 'WALKER', 'WALTON', 'WIG'
+    # }
+    #
+    # print('auto - manual')
+    # print(sorted(list(auto_names - manual_names)))
+    # print('manual - auto')
+    # print(sorted(list(manual_names - auto_names)))
+    # print('auto')
+    # print(sorted(list(auto_names)))
+    # print('manual')
+    # print(sorted(list(manual_names)))
 
-    building_indices = col_names_to_building_indices(data.columns)
+    series = pd.Series([math.nan, 3, math.nan, 3, 3, math.nan])
 
-    print(building_indices)
+    df = pd.DataFrame.from_dict({
+        'col1': series.copy(deep=True),
+        'col2': series.copy(deep=True)
+    })
 
-    auto_names = col_names_to_building_names(data.columns)
-    manual_names = {
-        'POMONA', '118-8TH', '1567TH', '345C',
-        'ALEXANDER', 'ANDREW', 'BALDWIN', 'BRACKETT', 'BRIDGES', 'CARNEGIE',
-        'CLARK3', 'CLARKI', 'CLARKV', 'CROOKSHANK',
-        'DRAPER', 'FARM', 'FRANK', 'FRARY', 'GIBONEY', 'GIBSON', 'GROUNDS',
-        'HAHN', 'HALDEMAN', 'HARWOOD', 'ITB', 'KENYON', 'LAWRY', 'LEB', 'LEBUS',
-        'MASON', 'MCCARTHY', 'MERRIT', 'MILLIKAN', 'MUSEUM', 'NORTON',
-        'OLDENBORG', 'PAULEY', 'PEARSON', 'PENDLETON', 'POMONA', 'RAINS',
-        'REMBRANDT', 'SCC', 'SEAVER', 'SGM', 'SMILEY', 'SMITH', 'SONTAG',
-        'STUDIOART', 'SUMNER', 'THATCHER', 'WALKER', 'WALTON', 'WIG'
-    }
+    print(fill_intervening_nas(df, inplace=False))
+    print(df)
+    fill_intervening_nas(df, inplace=True)
+    print(df)
 
-    print('auto - manual')
-    print(sorted(list(auto_names - manual_names)))
-    print('manual - auto')
-    print(sorted(list(manual_names - auto_names)))
-    print('auto')
-    print(sorted(list(auto_names)))
-    print('manual')
-    print(sorted(list(manual_names)))
+    print(fill_intervening_nas(series, inplace=False))
+    print(series)
+    fill_intervening_nas(series, inplace=True)
+    print(series)
