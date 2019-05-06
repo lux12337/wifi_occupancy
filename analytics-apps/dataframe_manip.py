@@ -1,7 +1,8 @@
-from typing import Optional, List, Union, Dict, NamedTuple
+from typing import Optional, List, Union, Dict, NamedTuple, Set
 import numpy as np
 import pandas as pd
 import pytz
+import re
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -21,6 +22,7 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
 class ColNameComponents(NamedTuple):
     college: str
     building: str
+    building_amendum: str
     acpt_num: str
 
 
@@ -41,13 +43,26 @@ def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
     if index_of_first_dash == -1:
         return None
 
-    # TODO get rid of number after building.
-
     college: str = split_by_AP[0][0:index_of_first_dash].strip()
-    building: str = split_by_AP[0][index_of_first_dash+1:].strip()
+    building_w_amendum: str = split_by_AP[0][index_of_first_dash + 1:].strip()
     acpt: str = split_by_AP[1].strip()
 
-    return ColNameComponents(college=college, building=building, acpt_num=acpt)
+    amendum_match = re.search(r'[^a-zA-Z]', building_w_amendum)
+
+    if amendum_match is None or amendum_match.start() == 0:
+        building: str = building_w_amendum
+        building_amendum = ''
+    else:
+        amendum_start: int = amendum_match.start()
+        building: str = building_w_amendum[:amendum_start]
+        building_amendum: str = building_w_amendum[amendum_start:]
+
+    return ColNameComponents(
+        college=college,
+        building=building,
+        building_amendum=building_amendum,
+        acpt_num=acpt
+    )
 
 
 def col_names_to_building_indices(
@@ -57,7 +72,7 @@ def col_names_to_building_indices(
     :param col_names:
     :return:
     """
-    groupids: np.ndarray = np.zeros(len(col_names))
+    groupids: np.ndarray = np.zeros(len(col_names), dtype=np.uint64)
 
     building_names: Dict[str, int] = {}
     unique_count = 0
@@ -75,6 +90,18 @@ def col_names_to_building_indices(
         groupids[i] = building_names[comps.building]
 
     return groupids
+
+
+def col_names_to_building_names(col_names: List[str]) -> Set[str]:
+
+    def building_name_or_none(col: str):
+        comps = decompose_col_name(col)
+        return None if comps is None else comps.building
+
+    return set(map(
+        lambda n: building_name_or_none(n),
+        col_names
+    ))
 
 
 def csv_to_timeseries_df(
@@ -245,8 +272,28 @@ if __name__ == '__main__':
     print(data.index.dtype)
     print(data.shape)
 
-    building_indices = col_names_to_building_indices(
-        data.columns
-    )
+    building_indices = col_names_to_building_indices(data.columns)
 
     print(building_indices)
+
+    auto_names = col_names_to_building_names(data.columns)
+    manual_names = {
+        'POMONA', '118-8TH', '1567TH', '345C',
+        'ALEXANDER', 'ANDREW', 'BALDWIN', 'BRACKETT', 'BRIDGES', 'CARNEGIE',
+        'CLARK3', 'CLARKI', 'CLARKV', 'CROOKSHANK',
+        'DRAPER', 'FARM', 'FRANK', 'FRARY', 'GIBONEY', 'GIBSON', 'GROUNDS',
+        'HAHN', 'HALDEMAN', 'HARWOOD', 'ITB', 'KENYON', 'LAWRY', 'LEB', 'LEBUS',
+        'MASON', 'MCCARTHY', 'MERRIT', 'MILLIKAN', 'MUSEUM', 'NORTON',
+        'OLDENBORG', 'PAULEY', 'PEARSON', 'PENDLETON', 'POMONA', 'RAINS',
+        'REMBRANDT', 'SCC', 'SEAVER', 'SGM', 'SMILEY', 'SMITH', 'SONTAG',
+        'STUDIOART', 'SUMNER', 'THATCHER', 'WALKER', 'WALTON', 'WIG'
+    }
+
+    print('auto - manual')
+    print(sorted(list(auto_names - manual_names)))
+    print('manual - auto')
+    print(sorted(list(manual_names - auto_names)))
+    print('auto')
+    print(sorted(list(auto_names)))
+    print('manual')
+    print(sorted(list(manual_names)))
