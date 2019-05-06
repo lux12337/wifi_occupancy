@@ -4,6 +4,8 @@ import pandas as pd
 import pytz
 import re
 import math
+import os.path
+from os import path
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -25,6 +27,11 @@ class ColNameComponents(NamedTuple):
     building: str
     building_amendum: str
     acpt_num: str
+
+
+class XY(NamedTuple):
+    x: Union[np.ndarray, List]
+    y: Union[np.ndarray, List]
 
 
 def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
@@ -108,7 +115,9 @@ def col_names_to_building_names(col_names: List[str]) -> Set[str]:
 def csv_to_timeseries_df(
         filepath: str,
         nrows: Optional[int] = None,
-        timezone: Optional[pytz.timezone] = None
+        timezone: Optional[pytz.timezone] = None,
+        cache_pickle_filepath: Optional[str] = None,
+        cache_if_no_cache: bool = True
 ) -> pd.DataFrame:
     """
     Loads data from a csv into a pandas dataframe.
@@ -117,6 +126,9 @@ def csv_to_timeseries_df(
     The other series will be float64
     :return: pandas dataframe
     """
+    if cache_pickle_filepath is not None and path.exists(cache_pickle_filepath):
+        return pd.read_pickle(cache_pickle_filepath)
+
     # Assumptions
     time_col_index: int = 0
 
@@ -134,6 +146,9 @@ def csv_to_timeseries_df(
 
     if timezone is not None:
         dataframe.index = dataframe.index.tz_convert(timezone)
+
+    if cache_pickle_filepath is not None and cache_if_no_cache:
+        pd.to_pickle(dataframe, cache_pickle_filepath)
 
     return dataframe
 
@@ -177,6 +192,21 @@ def fill_intervening_nas(
         axis=0
     )
     return df_or_series
+
+
+def na_coords(df: pd.DataFrame) -> XY:
+    """
+    x = row indices of na values
+    y = column indices of na values
+    :param df:
+    :return:
+    """
+
+    na_map = df.isna()
+
+    row_indices, col_indices = np.where(na_map)
+
+    return XY(x=row_indices, y=col_indices)
 
 
 def row_totals(df: pd.DataFrame) -> pd.DataFrame:
@@ -307,9 +337,13 @@ def column_quartiles(
 if __name__ == '__main__':
     data: pd.DataFrame = csv_to_timeseries_df(
         filepath='./wifi_data_until_20190204.csv',
-        timezone=pytz.timezone('US/Pacific')
+        timezone=pytz.timezone('US/Pacific'),
+        cache_pickle_filepath='./occupancy.pkl'
     )
+
     fill_intervening_nas(df_or_series=data, inplace=True, fill_val=0)
+
+    # pd.to_pickle(data, './occupancy.pkl')
     # print(data.columns)
     # print(data.dtypes)
     # print(data.index)
@@ -341,20 +375,24 @@ if __name__ == '__main__':
     # print(sorted(list(auto_names)))
     # print('manual')
     # print(sorted(list(manual_names)))
-
-    series = pd.Series([math.nan, 3, math.nan, 3, 3, math.nan])
-
-    df = pd.DataFrame.from_dict({
-        'col1': series.copy(deep=True),
-        'col2': series.copy(deep=True)
-    })
-
-    print(fill_intervening_nas(df, inplace=False))
-    print(df)
-    fill_intervening_nas(df, inplace=True)
-    print(df)
-
-    print(fill_intervening_nas(series, inplace=False))
-    print(series)
-    fill_intervening_nas(series, inplace=True)
-    print(series)
+    #
+    # series = pd.Series([math.nan, 3, math.nan, 3, 3, math.nan])
+    #
+    # df = pd.DataFrame.from_dict({
+    #     'col1': series.copy(deep=True),
+    #     'col2': series.copy(deep=True)
+    # })
+    #
+    # print(df)
+    # xy = na_coords(df)
+    # print(list(zip(xy.x, xy.y)))
+    #
+    # print(fill_intervening_nas(df, inplace=False))
+    # print(df)
+    # fill_intervening_nas(df, inplace=True)
+    # print(df)
+    #
+    # print(fill_intervening_nas(series, inplace=False))
+    # print(series)
+    # fill_intervening_nas(series, inplace=True)
+    # print(series)
