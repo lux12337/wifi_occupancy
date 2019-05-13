@@ -3,7 +3,7 @@ A module of miscellaneous tools for analysis.
 These tools should ideally be moved to themed modules later on.
 """
 
-from typing import List, Union, Dict, NamedTuple, Tuple, Set
+from typing import List, Union, Dict, NamedTuple, Tuple, Set, Sequence
 import numpy as np
 from .specifics.specifics import AcPtTimeSeries
 
@@ -17,34 +17,47 @@ class XY(NamedTuple):
     y: Union[np.ndarray, List]
 
 
+def classifying_indices(lst: Sequence[any]) -> np.ndarray:
+    """
+    Useful for grouping items in a list together.
+    :param lst: A list of immutable items.
+    :return: A numpy vector (1d ndarray) of indices pointing to the first
+    element in lst which matches that element.
+    """
+    ids: np.ndarray = np.zeros(len(lst), dtype=np.uint64)
+
+    items_to_ids: Dict[any, int] = {}
+    id_count = -1  # the first id will be 0
+
+    for i in range(0, len(lst)):
+        if lst[i] not in items_to_ids:
+            items_to_ids[lst[i]] = id_count = id_count+1
+
+        ids[i] = items_to_ids[lst[i]]
+
+    return ids
+
+
 def col_names_to_building_indices(
-        schema: AcPtTimeSeries, col_names: List[str]
-) -> Tuple[np.ndarray, Dict[str, int]]:
+        schema: AcPtTimeSeries, col_names: List[str],
+        include_building_names: bool = False
+) -> Union[np.ndarray, Tuple[np.ndarray, List[str]]]:
     """
     Useful for grouping columns of access points by building if one doesn't
     care what the
     :param schema: class instance specifying how building names should be
     extracted from column names.
     :param col_names: The names of columns.
-    :return: A tuple containing two results:
+    :param include_building_names: should the building names be returned?
+    :return:
     A np vector (1-d ndarray) of indices classifying which building
     each column belongs to.
     A dictionary mapping building names to the the indices in the np vector.
     """
-    groupids: np.ndarray = np.zeros(len(col_names), dtype=np.uint64)
+    building_names = col_names_to_building_names(schema, col_names)
+    ids: np.ndarray = classifying_indices(building_names)
 
-    building_names: Dict[str, int] = {}
-    unique_count = 0
-
-    for i in range(0, len(col_names)):
-        building: str = schema.col_to_building(col_names[i], i)
-
-        if building not in building_names:
-            building_names[building] = unique_count = unique_count + 1
-
-        groupids[i] = building_names[building]
-
-    return groupids, building_names
+    return (ids, building_names) if include_building_names else ids
 
 
 def col_names_to_building_names(
