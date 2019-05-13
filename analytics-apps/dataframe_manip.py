@@ -2,8 +2,7 @@ from typing import Optional, List, Union, Dict, NamedTuple, Set
 import numpy as np
 import pandas as pd
 import pytz
-import re
-import matplotlib.pyplot as plt
+from .specifics.specifics import AcPtTimeSeries
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -20,61 +19,17 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
     return ret
 
 
-class ColNameComponents(NamedTuple):
-    college: str
-    building: str
-    building_amendum: str
-    acpt_num: str
-
-
 class XY(NamedTuple):
     x: Union[np.ndarray, List]
     y: Union[np.ndarray, List]
 
 
-def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
-    """
-    :param col_name: name of a column in the csv
-    :return: the building name substring or None if something went wrong.
-    """
-
-    split_by_AP: List[str] = col_name.split('-AP')
-
-    # Fail if there is no '-AP' substring or too many.
-    if len(split_by_AP) != 2:
-        return None
-
-    index_of_first_dash: int = split_by_AP[0].find('-')
-
-    if index_of_first_dash == -1:
-        return None
-
-    college: str = split_by_AP[0][0:index_of_first_dash].strip()
-    building_w_amendum: str = split_by_AP[0][index_of_first_dash + 1:].strip()
-    acpt: str = split_by_AP[1].strip()
-
-    amendum_match = re.search(r'[^a-zA-Z]', building_w_amendum)
-
-    if amendum_match is None or amendum_match.start() == 0:
-        building: str = building_w_amendum
-        building_amendum = ''
-    else:
-        amendum_start: int = amendum_match.start()
-        building: str = building_w_amendum[:amendum_start]
-        building_amendum: str = building_w_amendum[amendum_start:]
-
-    return ColNameComponents(
-        college=college,
-        building=building,
-        building_amendum=building_amendum,
-        acpt_num=acpt
-    )
-
-
 def col_names_to_building_indices(
-        col_names: List[str]
+        specific: AcPtTimeSeries, col_names: List[str]
 ) -> Union[np.ndarray, None]:
     """
+    :param specific: class instance specifying how building names should be
+    extracted from column names.
     :param col_names:
     :return:
     """
@@ -84,27 +39,23 @@ def col_names_to_building_indices(
     unique_count = 0
 
     for i in range(0, len(col_names)):
+        building: str = specific.col_to_building(col_names[i], i)
 
-        comps: Union[None, ColNameComponents] = decompose_col_name(col_names[i])
+        if building not in building_names:
+            building_names[building] = unique_count = unique_count + 1
 
-        if comps is None:
-            return None
-
-        if comps.building not in building_names:
-            building_names[comps.building] = unique_count = unique_count + 1
-
-        groupids[i] = building_names[comps.building]
+        groupids[i] = building_names[building]
 
     return groupids
 
 
-def col_names_to_building_names(col_names: List[str]) -> Set[str]:
-
-    def building_name_or_none(col: str):
-        comps = decompose_col_name(col)
-        return None if comps is None else comps.building
-
-    return set(map(building_name_or_none, col_names))
+def col_names_to_building_names(
+        specific: AcPtTimeSeries, col_names: List[str]
+) -> List[str]:
+    return list(map(
+        lambda ci: specific.col_to_building(ci[0], ci[1]),
+        zip(col_names, range(0, len(col_names)))
+    ))
 
 
 def csv_to_timeseries_df(
