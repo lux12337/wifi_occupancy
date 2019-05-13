@@ -143,51 +143,45 @@ def column_totals(df: pd.DataFrame) -> pd.DataFrame:
     return sum_per_column
 
 
-def column_means(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+def column_means(df: pd.DataFrame) -> pd.DataFrame:
     """
     :param df: a dataframe with numeric columns.
-    :param skipna: should missing values be skipped?
     :return: a 1-dimensional dataframe of means per column.
     """
     mean_per_column = df.mean(
         # operate across rows.
         axis=0,
-        # treat na values as 0
-        skipna=skipna,
+        skipna=True,
         # skip non-numeric columns
         numeric_only=True
     )
     return mean_per_column
 
 
-def row_means(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+def row_means(df: pd.DataFrame) -> pd.DataFrame:
     """
     :param df: a dataframe with numeric columns.
-    :param skipna: should missing values be skipped?
     :return: a 1-dimensional dataframe of means per column.
     """
     mean_per_column = df.mean(
         # operate across rows.
         axis=1,
-        # treat na values as 0
-        skipna=skipna,
+        skipna=True,
         # skip non-numeric columns
         numeric_only=True
     )
     return mean_per_column
 
 
-def column_medians(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+def column_medians(df: pd.DataFrame) -> pd.DataFrame:
     """
     :param df: a dataframe with numeric columns.
-    :param skipna: should missing values be skipped?
     :return: a 1-dimensional dataframe of medians per column.
     """
     median_per_column = df.median(
         # operate across rows.
         axis=0,
-        # treat na values as 0
-        skipna=skipna,
+        skipna=True,
         # skip non-numeric columns
         numeric_only=True
     )
