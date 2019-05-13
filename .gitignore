@@ -22,6 +22,9 @@ analytics-apps/wifi_data_until_20190204.csv
 **/logs/
 **/.ipynb_checkpoints/
 
+# No csvs
+*.csv
+
 # Excel Workbooks
 *.xlsx
 
