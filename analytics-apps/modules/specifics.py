@@ -4,8 +4,9 @@ work.
 Users will create subclasses out of the following classes to provide these
 specifics.
 """
-from typing import Optional, Set
+from typing import Optional, Set, Union
 from abc import ABC, abstractmethod
+
 
 class AcPtTimeSeries:
     """
@@ -20,5 +21,14 @@ class AcPtTimeSeries:
 
     @classmethod
     @abstractmethod
-    def col_to_building(cls, name: str, index: Optional[int]) -> str:
+    def col_to_building(
+            cls, name: str, index: Optional[int], safe: bool
+    ) -> Union[str, None]:
+        """
+        :param name: the column name.
+        :param index: the column index.
+        :param safe: Should this function throw and exception or safely return
+        None if there are no matches?
+        :return: The building name or None.
+        """
         pass

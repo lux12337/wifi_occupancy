@@ -1,4 +1,4 @@
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Union
 from functools import lru_cache
 from .specifics import AcPtTimeSeries
 
@@ -21,13 +21,24 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
 
     @classmethod
     @lru_cache()
-    def col_to_building(cls, name: str, index: Optional[int] = None) -> str:
+    def col_to_building(
+            cls, name: str, index: Optional[int] = None, safe: bool = False
+    ) -> Union[str, None]:
         matches: List[str] = list(filter(
             lambda build: build in name, cls.buildings()
         ))
-        if len(matches) != 1:
-            raise Exception('Incorrect Number of Matches: {}'.format(matches))
-        return matches[0]
+
+        if len(matches) == 0 and safe:
+            return None
+        elif len(matches) == 0:
+            raise Exception("No matching buildings for '{}'".format(name))
+        elif len(matches) == 1:
+            return matches[0]
+
+        # sort ascending in string length.
+        matches.sort(key=len)
+        # return the longest match.
+        return matches[-1]
 
     @classmethod
     def run_tests(cls) -> None:

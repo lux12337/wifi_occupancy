@@ -61,10 +61,10 @@ def col_names_to_building_indices(
 
 
 def col_names_to_building_names(
-        schema: AcPtTimeSeries, col_names: List[str]
+        schema: AcPtTimeSeries, col_names: List[str], safe: bool = False
 ) -> List[str]:
     return list(map(
-        lambda ci: schema.col_to_building(ci[0], ci[1]),
+        lambda ci: schema.col_to_building(name=ci[0], index=ci[1], safe=safe),
         zip(col_names, range(0, len(col_names)))
     ))
 
@@ -80,11 +80,10 @@ def col_names_to_in_buildings(
     :param buildings: The buildings one wants to match.
     :return:
     """
-    return np.ndarray(
-        shape=(len(col_names),),
-        dtype=bool,
-        buffer=list(map(
+    return np.array(
+        list(map(
             lambda col: col in buildings,
-            col_names_to_building_names(schema, col_names)
-        ))
+            col_names_to_building_names(schema, col_names, safe=True)
+        )),
+        dtype=bool
     )
