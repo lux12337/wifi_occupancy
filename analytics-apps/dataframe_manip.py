@@ -104,10 +104,7 @@ def col_names_to_building_names(col_names: List[str]) -> Set[str]:
         comps = decompose_col_name(col)
         return None if comps is None else comps.building
 
-    return set(map(
-        lambda n: building_name_or_none(n),
-        col_names
-    ))
+    return set(map(building_name_or_none, col_names))
 
 
 def csv_to_timeseries_df(
@@ -324,78 +321,49 @@ def column_quartiles(
     return iqr_per_column
 
 
+def test_all():
+    """
+    Unit tests for this file's functions.
+    :return:
+    """
+    def test_fill_intervening_nas() -> None:
+        series1 = pd.Series([np.nan, 3, np.nan, 3, 3, np.nan])
+        series1_filled = pd.Series([np.nan, 3, 0, 3, 3, np.nan])
+
+        series2 = pd.Series([3, 3, 3, 3, 3, 3])
+        series2_filled = series2.copy(deep=True)
+
+        series3 = pd.Series([np.nan, 3, 3, 3, 3, 3])
+        series3_filled = pd.Series([np.nan, 3, 3, 3, 3, 3])
+
+        series4 = pd.Series([3, 3, 3, 3, 3, np.nan])
+        series4_filled = pd.Series([3, 3, 3, 3, 3, np.nan])
+
+        df = pd.DataFrame.from_dict({
+            'col1': series1,
+            'col2': series2,
+            'col3': series3,
+            'col4': series4
+        })
+        df_original = df.copy(deep=True)
+
+        df_filled = pd.DataFrame.from_dict({
+            'col1': series1_filled,
+            'col2': series2_filled,
+            'col3': series3_filled,
+            'col4': series4_filled
+        })
+
+        # this should not affect the original.
+        fill_intervening_nas(df, inplace=False)
+        assert df.equals(df_original)
+
+        fill_intervening_nas(df, inplace=True)
+        assert df.equals(df_filled)
+        pass
+
+    test_fill_intervening_nas()
+
+
 if __name__ == '__main__':
-    data: pd.DataFrame = csv_to_timeseries_df(
-        filepath='./wifi_data_until_20190204.csv',
-        timezone=pytz.timezone('US/Pacific')
-    )
-
-    rows_cols = na_coords(data)
-    plt.scatter(rows_cols.x, rows_cols.y)
-    plt.title('NA values before filling intervening nas')
-    plt.xlabel('time samples')
-    plt.ylabel('access points')
-    plt.show()
-
-    fill_intervening_nas(df_or_series=data, inplace=True, fill_val=0)
-
-    rows_cols = na_coords(data)
-    plt.scatter(rows_cols.x, rows_cols.y)
-    plt.title('NA values after filling intervening nas')
-    plt.xlabel('time samples')
-    plt.ylabel('access points')
-    plt.show()
-
-    # pd.to_pickle(data, './occupancy.pkl')
-    # print(data.columns)
-    # print(data.dtypes)
-    # print(data.index)
-    # print(data.index.dtype)
-    # print(data.shape)
-    #
-    # building_indices = col_names_to_building_indices(data.columns)
-    #
-    # print(building_indices)
-    #
-    # auto_names = col_names_to_building_names(data.columns)
-    # manual_names = {
-    #     'POMONA', '118-8TH', '1567TH', '345C',
-    #     'ALEXANDER', 'ANDREW', 'BALDWIN', 'BRACKETT', 'BRIDGES', 'CARNEGIE',
-    #     'CLARK3', 'CLARKI', 'CLARKV', 'CROOKSHANK',
-    #     'DRAPER', 'FARM', 'FRANK', 'FRARY', 'GIBONEY', 'GIBSON', 'GROUNDS',
-    #     'HAHN', 'HALDEMAN', 'HARWOOD', 'ITB', 'KENYON', 'LAWRY', 'LEB', 'LEBUS',
-    #     'MASON', 'MCCARTHY', 'MERRIT', 'MILLIKAN', 'MUSEUM', 'NORTON',
-    #     'OLDENBORG', 'PAULEY', 'PEARSON', 'PENDLETON', 'POMONA', 'RAINS',
-    #     'REMBRANDT', 'SCC', 'SEAVER', 'SGM', 'SMILEY', 'SMITH', 'SONTAG',
-    #     'STUDIOART', 'SUMNER', 'THATCHER', 'WALKER', 'WALTON', 'WIG'
-    # }
-    #
-    # print('auto - manual')
-    # print(sorted(list(auto_names - manual_names)))
-    # print('manual - auto')
-    # print(sorted(list(manual_names - auto_names)))
-    # print('auto')
-    # print(sorted(list(auto_names)))
-    # print('manual')
-    # print(sorted(list(manual_names)))
-    #
-    # series = pd.Series([math.nan, 3, math.nan, 3, 3, math.nan])
-    #
-    # df = pd.DataFrame.from_dict({
-    #     'col1': series.copy(deep=True),
-    #     'col2': series.copy(deep=True)
-    # })
-    #
-    # print(df)
-    # xy = na_coords(df)
-    # print(list(zip(xy.x, xy.y)))
-    #
-    # print(fill_intervening_nas(df, inplace=False))
-    # print(df)
-    # fill_intervening_nas(df, inplace=True)
-    # print(df)
-    #
-    # print(fill_intervening_nas(series, inplace=False))
-    # print(series)
-    # fill_intervening_nas(series, inplace=True)
-    # print(series)
+    test_all()
