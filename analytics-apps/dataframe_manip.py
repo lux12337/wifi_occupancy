@@ -1,9 +1,12 @@
-from typing import Optional, List, Union, Dict, NamedTuple, Set
+"""
+A module of tools for manipulating our Pandas Dataframes.
+"""
+
+from typing import Optional, List, Union
 import numpy as np
 import pandas as pd
 import pytz
-from .specifics.specifics import AcPtTimeSeries
-
+from .misc import XY
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
     """
@@ -17,45 +20,6 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
         if bui in i:
             ret.append(i)
     return ret
-
-
-class XY(NamedTuple):
-    x: Union[np.ndarray, List]
-    y: Union[np.ndarray, List]
-
-
-def col_names_to_building_indices(
-        specific: AcPtTimeSeries, col_names: List[str]
-) -> Union[np.ndarray, None]:
-    """
-    :param specific: class instance specifying how building names should be
-    extracted from column names.
-    :param col_names:
-    :return:
-    """
-    groupids: np.ndarray = np.zeros(len(col_names), dtype=np.uint64)
-
-    building_names: Dict[str, int] = {}
-    unique_count = 0
-
-    for i in range(0, len(col_names)):
-        building: str = specific.col_to_building(col_names[i], i)
-
-        if building not in building_names:
-            building_names[building] = unique_count = unique_count + 1
-
-        groupids[i] = building_names[building]
-
-    return groupids
-
-
-def col_names_to_building_names(
-        specific: AcPtTimeSeries, col_names: List[str]
-) -> List[str]:
-    return list(map(
-        lambda ci: specific.col_to_building(ci[0], ci[1]),
-        zip(col_names, range(0, len(col_names)))
-    ))
 
 
 def csv_to_timeseries_df(
