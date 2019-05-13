@@ -5,7 +5,7 @@ These tools should ideally be moved to themed modules later on.
 
 from typing import List, Union, Dict, NamedTuple, Tuple, Set, Sequence
 import numpy as np
-from .specifics.specifics import AcPtTimeSeries
+from .specifics import AcPtTimeSeries
 
 
 class XY(NamedTuple):

@@ -4,9 +4,8 @@ work.
 Users will create subclasses out of the following classes to provide these
 specifics.
 """
-from typing import Optional, Set, List, Union
+from typing import Optional, Set
 from abc import ABC, abstractmethod
-from functools import lru_cache
 
 class AcPtTimeSeries:
     """
