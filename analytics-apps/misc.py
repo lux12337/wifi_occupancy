@@ -3,7 +3,7 @@ A module of miscellaneous tools for analysis.
 These tools should ideally be moved to themed modules later on.
 """
 
-from typing import List, Union, Dict, NamedTuple, Tuple
+from typing import List, Union, Dict, NamedTuple, Tuple, Set
 import numpy as np
 from .specifics.specifics import AcPtTimeSeries
 
@@ -54,3 +54,24 @@ def col_names_to_building_names(
         lambda ci: schema.col_to_building(ci[0], ci[1]),
         zip(col_names, range(0, len(col_names)))
     ))
+
+
+def col_names_to_in_buildings(
+        schema: AcPtTimeSeries, col_names: List[str], buildings: Set[str]
+) -> np.ndarray:
+    """
+    Useful for finding the columns associated with a list of buildings.
+    :param schema: class instance specifying how building names should be
+    extracted from column names.
+    :param col_names: Column names.
+    :param buildings: The buildings one wants to match.
+    :return:
+    """
+    return np.ndarray(
+        shape=(len(col_names),),
+        dtype=bool,
+        buffer=list(map(
+            lambda col: col in buildings,
+            col_names_to_building_names(schema, col_names)
+        ))
+    )
