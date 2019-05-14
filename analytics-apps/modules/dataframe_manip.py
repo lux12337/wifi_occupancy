@@ -89,11 +89,10 @@ def fill_intervening_nas(
     if isinstance(df_or_series, pd.Series):
         return fill_series(df_or_series)
 
-    df_or_series.apply(
+    return df_or_series.apply(
         func=lambda ser: ser if isinstance(ser, pd.Index) else fill_series(ser),
         axis=0
     )
-    return df_or_series
 
 
 def na_coords(df: pd.DataFrame) -> XY:

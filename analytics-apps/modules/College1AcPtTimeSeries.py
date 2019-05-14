@@ -26,6 +26,8 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
     ) -> Union[str, None]:
         """
         Overrides AcPtTimeSeries method.
+        This uses the longest string match strategy to find the appropriate
+        building.
         :param col: the column index. The type should match this schema's
         column index type. e.g. integers, strings, datetimes, etc.
         :param safe: Should this function throw an exception or safely return
