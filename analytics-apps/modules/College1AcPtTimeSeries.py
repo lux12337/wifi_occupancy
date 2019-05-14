@@ -10,7 +10,7 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
         return {
             'POMONA', '118-8TH', '1567TH', '345C',
             'ALEXANDER', 'ANDREW', 'BALDWIN', 'BRACKETT', 'BRIDGES', 'CARNEGIE',
-            'CLARK3', 'CLARKI', 'CLARKV', 'CROOKSHANK',
+            'CLARK', 'CROOKSHANK',
             'DRAPER', 'FARM', 'FRANK', 'FRARY', 'GIBONEY', 'GIBSON', 'GROUNDS',
             'HAHN', 'HALDEMAN', 'HARWOOD', 'ITB', 'KENYON', 'LAWRY', 'LEB', 'LEBUS',
             'MASON', 'MCCARTHY', 'MERRIT', 'MILLIKAN', 'MUSEUM', 'NORTON',
@@ -67,7 +67,7 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
             """
             for colname, building in [
                 ('POM-SUMNER212-AP205-2', 'SUMNER'),
-                ('POM-CLARKV401-AP205-1', 'CLARKV'),
+                ('POM-CLARKV401-AP205-1', 'CLARK'),
                 ('POM-CARNEGIE215-AP215-5', 'CARNEGIE')
             ]:
                 assert cls.col_to_building(colname) == building
