@@ -4,8 +4,8 @@ work.
 Users will create subclasses out of the following classes to provide these
 specifics.
 """
-from typing import Optional, Set, Union
-from abc import ABC, abstractmethod
+from typing import Set, Union, Hashable
+from abc import abstractmethod
 
 
 class AcPtTimeSeries:
@@ -16,19 +16,19 @@ class AcPtTimeSeries:
 
     @classmethod
     @abstractmethod
-    def buildings(cls) -> Set[str]:
+    def buildings(cls) -> Set[Hashable]:
         pass
 
     @classmethod
     @abstractmethod
     def col_to_building(
-            cls, name: str, index: Optional[int], safe: bool
-    ) -> Union[str, None]:
+            cls, col: Hashable, safe: bool = False
+    ) -> Union[any, None]:
         """
-        :param name: the column name.
-        :param index: the column index.
-        :param safe: Should this function throw and exception or safely return
+        :param col: the column index. The type should match this schema's
+        column index type.
+        :param safe: Should this function throw an exception or safely return
         None if there are no matches?
-        :return: The building name or None.
+        :return: The building name corresponding to col.
         """
         pass

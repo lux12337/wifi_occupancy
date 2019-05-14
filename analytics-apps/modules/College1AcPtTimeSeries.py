@@ -1,6 +1,6 @@
-from typing import Optional, Set, List, Union
+from typing import Set, List, Union
 from functools import lru_cache
-from .specifics import AcPtTimeSeries
+from .schemas import AcPtTimeSeries
 
 
 class College1AcPtTimeSeries(AcPtTimeSeries):
@@ -22,16 +22,30 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
     @classmethod
     @lru_cache()
     def col_to_building(
-            cls, name: str, index: Optional[int] = None, safe: bool = False
+            cls, col: str, safe: bool = False
     ) -> Union[str, None]:
+        """
+        Overrides AcPtTimeSeries method.
+        :param col: the column index. The type should match this schema's
+        column index type. e.g. integers, strings, datetimes, etc.
+        :param safe: Should this function throw an exception or safely return
+        None if there are no matches?
+        :return: The building name corresponding to col.
+        """
+        if not isinstance(col, str):
+            if safe:
+                return None
+            else:
+                raise Exception('col should be of type str')
+
         matches: List[str] = list(filter(
-            lambda build: build in name, cls.buildings()
+            lambda build: build in col, cls.buildings()
         ))
 
         if len(matches) == 0 and safe:
             return None
         elif len(matches) == 0:
-            raise Exception("No matching buildings for '{}'".format(name))
+            raise Exception("No matching buildings for '{}'".format(col))
         elif len(matches) == 1:
             return matches[0]
 
