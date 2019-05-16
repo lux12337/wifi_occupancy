@@ -28,7 +28,7 @@ def hour_rounder(t):
     return (t.replace(second=0, microsecond=0, minute=0, hour=t.hour)
                +timedelta(hours=t.minute//30))
 
-def get_connected_devices_total_timed(name, data):
+def prepare_byHour_df_for_ARIMA(name, data):
     """
     Takes a name of a building and finds the
     total average of devices in the building
@@ -81,6 +81,43 @@ def split_train_test_average_to_hour(data, percent):
 # In[ ]:
 
 
+# invert differenced value
+def inverse_difference(history, yhat, interval=1):
+    return yhat + history[-interval]
+
+def rm_extra_array(arr):
+    ret = []
+    for i in arr:
+        ret.append(i[0])
+    return ret
+
+def forecast_oneStep_outOfSample_ARIMA(df,p_arima,d_arima,q_arima):
+    model = ARIMA(df,order=(p_arima,d_arima,q_arima))
+    model_fit = model.fit(disp=0)
+    forecast = model_fit.forecast()[0]
+    return forecast[0]
+    
+def forecast_multiStep_outOfSample_ARIMA(df,step,p_arima,d_arima,q_arima):
+    model = ARIMA(df,order=(p_arima,d_arima,q_arima))
+    model_fit = model.fit(disp=0)
+    forecast = model_fit.forecast(steps=step)[0]
+    
+    history = rm_extra_array([x for x in df.values])
+    
+    #print(forecast)
+    ret = []
+    for y in forecast:
+        #print("y: "+str(y))
+        i = inverse_difference(history, y, 24)
+        history.append(i)
+        ret.append(i)
+
+    return ret
+
+
+# In[ ]:
+
+
 # POSSIBLE INPUT
 filename = 'wifi_data_until_20190204.csv'
 building_name = 'CLARK'
@@ -107,77 +144,27 @@ wifi_df = pd.read_csv(
 
 
 # Gets a Series object that represents number of devices
-# connected based on time every 5 minutes
-building_time_df = get_connected_devices_total_timed(
+# connected based on time every hour
+building_time_df = prepare_byHour_df_for_ARIMA(
     building_name, wifi_df)
+
+
+# In[ ]:
+
 
 # Separated training set from testing set
 # Only getting one month because its a hella a lot of data
-train_hour_df, test_hour_df = split_train_test_average_to_hour(
-    building_time_df['2019-01':'2019-02'], 0.66)
+train_hour_df, test_hour_df = split_train_test_average_to_hour(building_time_df, 0.66)
 
 
 # In[ ]:
 
 
-# This plot allows you to quickly estimate if your 
-# time series is random or not.
-# Helps determin p_arima.
-# Number is whereever positive correlation starts
-autocorrelation_plot(train_hour_df)
+forecast_oneStep_outOfSample_ARIMA(train_hour_df,p_arima,d_arima,q_arima)
 
 
 # In[ ]:
 
 
-model = ARIMA(test_hour_df,order=(p_arima,d_arima,q_arima))
-model_fit = model.fit(disp=0)
-print(model_fit.summary())
-
-
-# In[ ]:
-
-
-predictions = list()
-history = [x for x in train_hour_df['total']]
-#test_hour_df.index.freq = 'H'#test_hour_df.index.inferred_freq
-results = pd.DataFrame(columns = ['predicted','expected'])
-
-
-# In[ ]:
-
-
-for t in range(len(test_hour_df)):
-#for t in range(1000):
-    model = ARIMA(history, order=(p_arima,d_arima,q_arima))
-    model_fit = model.fit(disp=0)
-    output = model_fit.forecast()
-    yhat = output[0]
-    predictions.append(yhat)
-    obs = test_hour_df['total'][t]
-    history.append(obs)
-    add = pd.DataFrame({"predicted":[yhat],"expected":[obs]})
-    print('predicted=%f, expected=%f' % (yhat, obs))
-
-
-# In[ ]:
-
-
-error = mean_squared_error(test, predictions)
-print('Test MSE: %.3f' % error)
-
-
-# In[ ]:
-
-
-# plot
-plt.plot(test_hour_df)
-plt.plot(predictions, color='red')
-plt.show()
-
-
-# In[ ]:
-
-
-
+forecast_multiStep_outOfSample_ARIMA(train_hour_df,10,p_arima,d_arima,q_arima)
 
