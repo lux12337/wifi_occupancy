@@ -229,6 +229,51 @@ def column_quartiles(
     return iqr_per_column
 
 
+def get_hourly_data_building(data, building_name):
+	"""
+	Extracts all the APs present in a building and fills NaN with 0.
+	Sets index to datetime and adjusts for timezone. Then it calculates
+	the hourly mean occupancy of each AP.
+
+	:input:
+		data 			-> dataframe output from csv_to_dataframe
+		building_name 	-> specific building name in string(eg. 'SCC')
+	:return:
+		pandas dataframe
+	"""
+
+	building = data[get_building_accesspoints(data, building_name)].fillna(0).copy()
+	building.index = pd.to_datetime(building.index, utc=True)
+	building = building.resample('H').mean()
+
+	return building
+
+
+def get_daily_average(data, building_name):
+	"""
+	Adds the UTC offset in the datetime index. Sums all the APs together in column 'y',
+	and calculates the daily average occupancy from 'y'. Removes offset string after
+	calculations. Changes 'time' from an index to a column.
+
+	:input:
+		data 			-> dataframe output from csv_to_dataframe
+		building_name 	-> specific building name in string(eg. 'SCC')
+	:return:
+		pandas dataframe
+	"""
+
+	building = data[get_building_accesspoints(data, building_name)].copy()
+	building.index = pd.to_datetime(building.index, utc=True)
+	building['y'] = building.sum(axis=1)
+	building = building.resample('D').mean()
+	building = building['y']
+	building = pd.DataFrame(building).reset_index()
+	building.columns = ['ds', 'y']
+	building['ds'] = building['ds'].astype(str).str[:-15]
+
+	return building
+
+
 def test_all():
     """
     Unit tests for this file's functions.
