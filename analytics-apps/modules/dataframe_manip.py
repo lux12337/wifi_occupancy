@@ -1,6 +1,9 @@
-from typing import Optional, List, Union, Dict, NamedTuple
+from typing import Optional, List, Union, Set
 import numpy as np
 import pandas as pd
+import seaborn
+import matplotlib.pyplot as plt
+import re
 import pytz
 
 
@@ -18,61 +21,59 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
     return ret
 
 
-class ColNameComponents(NamedTuple):
-    college: str
-    building: str
-    acpt_num: str
+college_pattern = re.compile(
+    r"^\w+"
+)
+
+building_pattern = re.compile(
+    r"\w+\d*(-\w*\d*)*"
+)
+
+acpt_pattern = re.compile(
+    r"AP\d*(-\d*)*"
+)
+
+col_name_pattern = re.compile(
+    '^'
+    + college_pattern.pattern
+    + '-' + building_pattern.pattern
+    + '-' + acpt_pattern.pattern
+    + '$'
+)
 
 
-def decompose_col_name(col_name: str) -> Union[ColNameComponents, None]:
+def col_name_to_building(col_name: str) -> Union[str, None]:
     """
+    # TODO test
     :param col_name: name of a column in the csv
     :return: the building name substring or None if something went wrong.
     """
 
-    split_by_AP: List[str] = col_name.split('-AP')
+    building = re.match(
+        building_pattern, col_name
+    )
 
-    # Fail if there is no '-AP' substring or too many.
-    if len(split_by_AP) != 2:
-        return None
-
-    index_of_first_dash: int = split_by_AP[0].find('-')
-
-    if index_of_first_dash == -1:
-        return None
-
-    # TODO get rid of number after building.
-
-    college: str = split_by_AP[0][0:index_of_first_dash].strip()
-    building: str = split_by_AP[0][index_of_first_dash+1:].strip()
-    acpt: str = split_by_AP[1].strip()
-
-    return ColNameComponents(college=college, building=building, acpt_num=acpt)
+    return building
 
 
-def col_names_to_building_indices(
-    col_names: List[str]
-) -> Union[np.ndarray, None]:
+def col_names_to_building_indices(col_names: List[str]) -> List[int]:
     """
     :param col_names:
     :return:
     """
-    groupids: np.ndarray = np.zeros(len(col_names))
+    groupids: List[int] = []
 
-    building_names: Dict[str, int] = {}
-    unique_count = 0
+    building_names: Set[str] = set({})
+    i = 0
 
-    for i in range(0, len(col_names)):
-
-        comps: Union[None, ColNameComponents] = decompose_col_name(col_names[i])
-
-        if comps is None:
-            return None
-
-        if comps.building not in building_names:
-            building_names[comps.building] = unique_count = unique_count + 1
-
-        groupids[i] = building_names[comps.building]
+    for b in col_names:
+        if b in building_names:
+            groupids.append(i)
+        else:
+            bn = col_name_to_building(b)
+            building_names.add(bn)
+            groupids.append(i)
+            i = i + 1
 
     return groupids
 
@@ -235,6 +236,52 @@ def column_quartiles(
     return iqr_per_column
 
 
+
+def get_hourly_data_building(data, building_name):
+	"""
+	Extracts all the APs present in a building and fills NaN with 0.
+	Sets index to datetime and adjusts for timezone. Then it calculates
+	the hourly mean occupancy of each AP.
+
+	:input:
+		data 			-> dataframe output from csv_to_dataframe
+		building_name 	-> specific building name in string(eg. 'SCC')
+	:return:
+		pandas dataframe
+	"""
+
+	building = data[get_building_accesspoints(data, building_name)].fillna(0).copy()
+	building.index = pd.to_datetime(building.index, utc=True)
+	building = building.resample('H').mean()
+
+	return building
+
+
+def get_daily_average(data, building_name):
+	"""
+	Adds the UTC offset in the datetime index. Sums all the APs together in column 'y',
+	and calculates the daily average occupancy from 'y'. Removes offset string after
+	calculations. Changes 'time' from an index to a column.
+
+	:input:
+		data 			-> dataframe output from csv_to_dataframe
+		building_name 	-> specific building name in string(eg. 'SCC')
+	:return:
+		pandas dataframe
+	"""
+
+	building = data[get_building_accesspoints(data, building_name)].copy()
+	building.index = pd.to_datetime(building.index, utc=True)
+	building['y'] = building.sum(axis=1)
+	building = building.resample('D').mean()
+	building = building['y']
+	building = pd.DataFrame(building).reset_index()
+	building.columns = ['ds', 'y']
+	building['ds'] = building['ds'].astype(str).str[:-15]
+
+	return building
+
+
 if __name__ == '__main__':
     data: pd.DataFrame = csv_to_timeseries_df(
         filepath='./wifi_data_until_20190204.csv'
@@ -249,4 +296,4 @@ if __name__ == '__main__':
         data.columns
     )
 
-    print(building_indices)
+    print(list(filter(lambda x: x is None, building_indices)))
