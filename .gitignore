@@ -32,3 +32,4 @@ analytics-apps/wifi_data_until_20190204.csv
 *.tex
 output_*.png
 *.png
+*.icloud
