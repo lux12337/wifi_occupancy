@@ -191,28 +191,6 @@ class remote_db():
         :param measurement: the name of this measurement
         :return:
         """
-        def preprocess_data(data_: DataFrame) -> DataFrame:
-            """
-            :param data_: the original data
-            :return: data in the desired format
-            """
-            columns = list(data_.columns)
-
-            # for influx, ts must in datetime format
-            data_['ts'] = DatetimeIndex(data_['ts'].apply(
-                # "YYYY-MM-DD HH:MM:SS"
-                lambda ts: to_datetime(
-                    arg=ts, format='%Y%m%d%H%M%S'
-                )
-            ))
-
-            # swap to ensure that ts is the first column
-            ts_index: int = columns.index('ts')
-            columns[0], columns[ts_index] = columns[ts_index], columns[0]
-            data_ = data_[columns]
-
-            return data_
-
         def data_chunks(data_: DataFrame) -> Generator[DataFrame, None, None]:
             """
             It's necessary to break up the data into multiple chunks.
@@ -255,8 +233,14 @@ class remote_db():
 
                 yield chunk
 
+        # for influx, ts must in datetime format.
+        data['ts'] = to_datetime(data['ts'], infer_datetime_format=True)
 
-        data: DataFrame = preprocess_data(data)
+        # swap to ensure that ts_col is the first column.
+        columns = list(data.columns)
+        ts_index: int = columns.index('ts')
+        columns[0], columns[ts_index] = columns[ts_index], columns[0]
+        data = data[columns]
 
         for chunk in data_chunks(data):
             self.influx_client.write_points(
