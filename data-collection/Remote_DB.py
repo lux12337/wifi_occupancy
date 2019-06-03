@@ -155,7 +155,6 @@ class remote_db():
                 self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(
                     self.username, self.password, self.host, self.port, self.database
                 ))
-                self.create_table_timescale()
                 self.create_hypertable_timescale()
 
             elif self.db_type == "influx":
@@ -282,6 +281,15 @@ class remote_db():
                 )
             )
 
+
+    def create_hypertable_timescale(self):
+        """
+        this method tries to create a postgres table, and then it turns it into a hypertable
+        """
+        self.create_table_timescale()
+        self.table_to_hypertable()
+
+
     def create_table_timescale(self):
         """
         this method creates a postgres table in preparation for a hypertable in timescale
@@ -301,7 +309,7 @@ class remote_db():
             )
             raise e
 
-    def create_hypertable_timescale(self):
+    def table_to_hypertable(self):
         """
         this method tries to turn the table into a hypertable, and it if it fails, it will catch the warning and rollback the commit
         """
