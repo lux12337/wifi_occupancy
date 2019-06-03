@@ -16,7 +16,7 @@ class remote_db():
     This class establishes a connection with a remote db(TimescaleDB, InfluxDB, ORM) and pushes local data to it.
     """
 
-    def __init__(self, project_path = ".", config_file="config.ini"):
+    def __init__(self, project_path=".", config_file="config.ini"):
 
         self.project_path = project_path
         """
@@ -50,40 +50,84 @@ class remote_db():
         try:
             self.db_type = config.get('remote_db', 'db_type')
         except:
-            pass
+            self.db_type = None
         try:
             self.host = config.get('remote_db', 'host')
         except:
-            pass
+            self.host = None
         try:
             self.port = config.get('remote_db', 'port')
         except:
-            pass
+            self.port = None
         try:
             self.username = config.get('remote_db', 'username')
         except:
-            pass
+            self.username = None
         try:
             self.password = config.get('remote_db', 'password')
         except:
-            pass
+            self.password = None
         try:
             self.database = config.get('remote_db', 'database')
         except:
-            pass
+            self.database = None
         try:
             self.filename = config.get('remote_db', 'filename')
         except:
-            pass
+            self.filename = None
         try:
             self.table_name = config.get('remote_db', 'table_name')
         except:
-            pass
+            self.table_name = None
+        """Optional Influx Arguments"""
+        self.influx_optional_args: Dict[str, any] = {}
+        try:
+            self.influx_optional_args['pool_size'] = self.pool_size\
+                = int(config.get('remote_db', 'pool_size'))
+        except:
+            self.pool_size = None
+        try:
+            self.influx_optional_args['ssl'] = self.ssl\
+                = bool(config.get('remote_db', 'ssl'))
+        except:
+            self.ssl = None
+        try:
+            self.influx_optional_args['verify_ssl'] = self.verify_ssl\
+                = bool(config.get('remote_db', 'verify_ssl'))
+        except:
+            self.verify_ssl = None
+        try:
+            self.influx_optional_args['timeout'] = self.timeout\
+                = int(config.get('remote_db', 'timeout'))
+        except:
+            self.timeout = None
+        try:
+            self.influx_optional_args['retries'] = self.retries\
+                = int(config.get('remote_db', 'retries'))
+        except:
+            self.retries = None
+        try:
+            self.influx_optional_args['use_udp'] = self.use_udp\
+                = bool(config.get('remote_db', 'use_udp'))
+        except:
+            self.use_udp = None
+        try:
+            self.influx_optional_args['udp_port'] = self.udp_port\
+                = int(config.get('remote_db', 'udp_port'))
+        except:
+            self.udp_port = None
+        try:
+            self.influx_optional_args['path'] = self.path\
+                = str(config.get('remote_db', 'path'))
+        except:
+            self.path = None
 
         """
         create a connection to the remote db
         """
 
+        # self.db is filled by create_DB_connection()
+        self.db = None
         self.create_DB_connection()
 
     def create_DB_connection(self):
@@ -92,7 +136,9 @@ class remote_db():
         """
         try:
             if self.db_type == "mysql":
-                self.db = DAL('mysql://{}:{}@{}:{}/{}?set_encoding=utf8mb4'.format(self.username, self.password, self.host, self.port, self.database))
+                self.db = DAL('mysql://{}:{}@{}:{}/{}?set_encoding=utf8mb4'.format(
+                    self.username, self.password, self.host, self.port, self.database
+                ))
                 self.create_table()
 
             elif self.db_type == "sqlite":
@@ -100,11 +146,15 @@ class remote_db():
                 self.create_table()
 
             elif self.db_type == "postgres":
-                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(
+                    self.username, self.password, self.host, self.port, self.database
+                ))
                 self.create_table()
 
             elif self.db_type == "timescale":
-                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(self.username, self.password, self.host, self.port, self.database))
+                self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(
+                    self.username, self.password, self.host, self.port, self.database
+                ))
                 self.create_table_timescale()
                 self.create_hypertable_timescale()
 
@@ -127,10 +177,10 @@ class remote_db():
             port=self.port,
             username=self.username,
             password=self.password,
-            database=self.database
+            database=self.database,
+            **self.influx_optional_args
         )
         return self.influx_client
-
 
     def push_to_influx_database(
         self, data: DataFrame, measurement: str
