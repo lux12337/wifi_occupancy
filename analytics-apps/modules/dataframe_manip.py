@@ -1,10 +1,14 @@
-from typing import Optional, List, Union, Set
+"""
+A module of tools for manipulating our Pandas Dataframes.
+"""
+
+from typing import Optional, List, Union
+
 import numpy as np
 import pandas as pd
-import seaborn
-import matplotlib.pyplot as plt
-import re
 import pytz
+
+from .misc import XY
 
 
 def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
@@ -21,67 +25,10 @@ def get_building_accesspoints(lis: List[str], bui: str) -> List[str]:
     return ret
 
 
-college_pattern = re.compile(
-    r"^\w+"
-)
-
-building_pattern = re.compile(
-    r"\w+\d*(-\w*\d*)*"
-)
-
-acpt_pattern = re.compile(
-    r"AP\d*(-\d*)*"
-)
-
-col_name_pattern = re.compile(
-    '^'
-    + college_pattern.pattern
-    + '-' + building_pattern.pattern
-    + '-' + acpt_pattern.pattern
-    + '$'
-)
-
-
-def col_name_to_building(col_name: str) -> Union[str, None]:
-    """
-    # TODO test
-    :param col_name: name of a column in the csv
-    :return: the building name substring or None if something went wrong.
-    """
-
-    building = re.match(
-        building_pattern, col_name
-    )
-
-    return building
-
-
-def col_names_to_building_indices(col_names: List[str]) -> List[int]:
-    """
-    :param col_names:
-    :return:
-    """
-    groupids: List[int] = []
-
-    building_names: Set[str] = set({})
-    i = 0
-
-    for b in col_names:
-        if b in building_names:
-            groupids.append(i)
-        else:
-            bn = col_name_to_building(b)
-            building_names.add(bn)
-            groupids.append(i)
-            i = i + 1
-
-    return groupids
-
-
 def csv_to_timeseries_df(
-    filepath: str,
-    nrows: Optional[int] = None,
-    timezone: Optional[pytz.timezone] = None
+        filepath: str,
+        nrows: Optional[int] = None,
+        timezone: Optional[pytz.timezone] = None
 ) -> pd.DataFrame:
     """
     Loads data from a csv into a pandas dataframe.
@@ -109,6 +56,67 @@ def csv_to_timeseries_df(
         dataframe.index = dataframe.index.tz_convert(timezone)
 
     return dataframe
+
+
+def fill_intervening_nas(
+        df_or_series: Union[pd.DataFrame, pd.Series],
+        inplace: bool = False,
+        fill_val: any = 0
+) -> Union[pd.DataFrame, pd.Series]:
+    if not inplace:
+        df_or_series = df_or_series.copy(deep=True)
+
+    def fill_series(series: pd.Series) -> None:
+        """
+        Fills the intervening na-values of a series inplace.
+        """
+        if not series.hasnans:
+            return
+
+        na_map = series.isna()
+        not_na_map = ~na_map
+
+        not_na_indices = np.where(not_na_map)[0]
+        first_not_na = not_na_indices[0]
+        last_not_na = not_na_indices[-1]
+
+        # Start with the na_map.
+        intervening_na_map = na_map
+        # Eliminate initial and trailing na's.
+        if first_not_na != 0:
+            intervening_na_map.loc[:first_not_na] = False
+        if last_not_na != intervening_na_map.size-1:
+            intervening_na_map.loc[last_not_na + 1:] = False
+
+        series.loc[intervening_na_map] = fill_val
+        pass
+
+    if isinstance(df_or_series, pd.Series):
+        fill_series(df_or_series)
+        return df_or_series
+    else:
+        for _, ser in df_or_series.iteritems():
+            # Temporarily disable chained_assignment warning because fill_series
+            # will modify the original column.
+            with pd.option_context('mode.chained_assignment', None):
+                fill_series(ser)
+
+    return df_or_series
+
+
+def na_coords(df: pd.DataFrame) -> XY:
+    """
+    x = row indices of na values
+    y = column indices of na values
+    :param df:
+    :return:
+    """
+
+    na_map = df.isna()
+
+    row_indices, col_indices = np.where(na_map)
+
+    return XY(x=row_indices, y=col_indices)
 
 
 def row_totals(df: pd.DataFrame) -> pd.DataFrame:
@@ -143,51 +151,45 @@ def column_totals(df: pd.DataFrame) -> pd.DataFrame:
     return sum_per_column
 
 
-def column_means(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+def column_means(df: pd.DataFrame) -> pd.DataFrame:
     """
     :param df: a dataframe with numeric columns.
-    :param skipna: should missing values be skipped?
     :return: a 1-dimensional dataframe of means per column.
     """
     mean_per_column = df.mean(
         # operate across rows.
         axis=0,
-        # treat na values as 0
-        skipna=skipna,
+        skipna=True,
         # skip non-numeric columns
         numeric_only=True
     )
     return mean_per_column
 
 
-def row_means(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+def row_means(df: pd.DataFrame) -> pd.DataFrame:
     """
     :param df: a dataframe with numeric columns.
-    :param skipna: should missing values be skipped?
     :return: a 1-dimensional dataframe of means per column.
     """
     mean_per_column = df.mean(
         # operate across rows.
         axis=1,
-        # treat na values as 0
-        skipna=skipna,
+        skipna=True,
         # skip non-numeric columns
         numeric_only=True
     )
     return mean_per_column
 
 
-def column_medians(df: pd.DataFrame, skipna: bool = True) -> pd.DataFrame:
+def column_medians(df: pd.DataFrame) -> pd.DataFrame:
     """
     :param df: a dataframe with numeric columns.
-    :param skipna: should missing values be skipped?
     :return: a 1-dimensional dataframe of medians per column.
     """
     median_per_column = df.median(
         # operate across rows.
         axis=0,
-        # treat na values as 0
-        skipna=skipna,
+        skipna=True,
         # skip non-numeric columns
         numeric_only=True
     )
@@ -236,64 +238,95 @@ def column_quartiles(
     return iqr_per_column
 
 
-
 def get_hourly_data_building(data, building_name):
-	"""
-	Extracts all the APs present in a building and fills NaN with 0.
-	Sets index to datetime and adjusts for timezone. Then it calculates
-	the hourly mean occupancy of each AP.
+    """
+    Extracts all the APs present in a building and fills NaN with 0.
+    Sets index to datetime and adjusts for timezone. Then it calculates
+    the hourly mean occupancy of each AP.
 
-	:input:
-		data 			-> dataframe output from csv_to_dataframe
-		building_name 	-> specific building name in string(eg. 'SCC')
-	:return:
-		pandas dataframe
-	"""
+    :input:
+        data 			-> dataframe output from csv_to_dataframe
+        building_name 	-> specific building name in string(eg. 'SCC')
+    :return:
+        pandas dataframe
+    """
 
-	building = data[get_building_accesspoints(data, building_name)].fillna(0).copy()
-	building.index = pd.to_datetime(building.index, utc=True)
-	building = building.resample('H').mean()
+    building = data[get_building_accesspoints(data, building_name)].fillna(0).copy()
+    building.index = pd.to_datetime(building.index, utc=True)
+    building = building.resample('H').mean()
 
-	return building
+    return building
 
 
 def get_daily_average(data, building_name):
-	"""
-	Adds the UTC offset in the datetime index. Sums all the APs together in column 'y',
-	and calculates the daily average occupancy from 'y'. Removes offset string after
-	calculations. Changes 'time' from an index to a column.
+    """
+    Adds the UTC offset in the datetime index. Sums all the APs together in column 'y',
+    and calculates the daily average occupancy from 'y'. Removes offset string after
+    calculations. Changes 'time' from an index to a column.
 
-	:input:
-		data 			-> dataframe output from csv_to_dataframe
-		building_name 	-> specific building name in string(eg. 'SCC')
-	:return:
-		pandas dataframe
-	"""
+    :input:
+        data 			-> dataframe output from csv_to_dataframe
+        building_name 	-> specific building name in string(eg. 'SCC')
+    :return:
+        pandas dataframe
+    """
 
-	building = data[get_building_accesspoints(data, building_name)].copy()
-	building.index = pd.to_datetime(building.index, utc=True)
-	building['y'] = building.sum(axis=1)
-	building = building.resample('D').mean()
-	building = building['y']
-	building = pd.DataFrame(building).reset_index()
-	building.columns = ['ds', 'y']
-	building['ds'] = building['ds'].astype(str).str[:-15]
+    building = data[get_building_accesspoints(data, building_name)].copy()
+    building.index = pd.to_datetime(building.index, utc=True)
+    building['y'] = building.sum(axis=1)
+    building = building.resample('D').mean()
+    building = building['y']
+    building = pd.DataFrame(building).reset_index()
+    building.columns = ['ds', 'y']
+    building['ds'] = building['ds'].astype(str).str[:-15]
 
-	return building
+    return building
+
+
+def test_all():
+    """
+    Unit tests for this file's functions.
+    :return:
+    """
+
+    def test_fill_intervening_nas() -> None:
+        series1 = pd.Series([np.nan, 3, np.nan, 3, 3, np.nan])
+        series1_filled = pd.Series([np.nan, 3, 0, 3, 3, np.nan])
+
+        series2 = pd.Series([3, 3, 3, 3, 3, 3])
+        series2_filled = series2.copy(deep=True)
+
+        series3 = pd.Series([np.nan, 3, 3, 3, 3, 3])
+        series3_filled = pd.Series([np.nan, 3, 3, 3, 3, 3])
+
+        series4 = pd.Series([3, 3, 3, 3, 3, np.nan])
+        series4_filled = pd.Series([3, 3, 3, 3, 3, np.nan])
+
+        df = pd.DataFrame.from_dict({
+            'col1': series1,
+            'col2': series2,
+            'col3': series3,
+            'col4': series4
+        })
+        df_original = df.copy(deep=True)
+
+        df_filled = pd.DataFrame.from_dict({
+            'col1': series1_filled,
+            'col2': series2_filled,
+            'col3': series3_filled,
+            'col4': series4_filled
+        })
+
+        # this should not affect the original.
+        fill_intervening_nas(df, inplace=False)
+        assert df.equals(df_original)
+
+        fill_intervening_nas(df, inplace=True)
+        assert df.equals(df_filled)
+        pass
+
+    test_fill_intervening_nas()
 
 
 if __name__ == '__main__':
-    data: pd.DataFrame = csv_to_timeseries_df(
-        filepath='./wifi_data_until_20190204.csv'
-    )
-    print(data.columns)
-    print(data.dtypes)
-    print(data.index)
-    print(data.index.dtype)
-    print(data.shape)
-
-    building_indices = col_names_to_building_indices(
-        data.columns
-    )
-
-    print(list(filter(lambda x: x is None, building_indices)))
+    test_all()
