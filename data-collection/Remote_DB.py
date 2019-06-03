@@ -271,7 +271,7 @@ class remote_db():
         this method creates a SQL type of table in the remote db, if it fails, it catches the warning and logs it
         """
         try:
-            self.db.define_table(self.table_name, Field('AP_id'), Field('value'), Field('time', type='datetime'))
+            self.db.define_table(self.table_name, Field('AP_id'), Field('value', type='integer'), Field('time', type='datetime'))
             self.logger.info("{} was created in remote db".format(self.table_name))
 
         except Exception as e:
@@ -288,7 +288,7 @@ class remote_db():
         """
         try:
             self.db.executesql(
-                "CREATE TABLE IF NOT EXISTS {}(time TIMESTAMP, AP_id CHAR(512), value CHAR(512));".format(
+                "CREATE TABLE IF NOT EXISTS {}(time TIMESTAMP, AP_id CHAR(512), value INT);".format(
                     self.table_name
                 )
             )
@@ -387,7 +387,29 @@ class remote_db():
             self.logger.error("pushing to remote database failed")
             raise e
 
+
     def drop_table(self):
+        """
+        this method drops a table depending on what type of database is being used
+        """
+
+        try:
+            if self.db_type == "mysql"\
+                    or self.db_type == "sqlite"\
+                    or self.db_type == "postgres":
+                self.drop_table_sql()
+
+            elif self.db_type == "timescale":
+                self.drop_table_timescale()
+
+            else:
+                raise Exception('Database type has no drop function implemented.')
+
+        except Exception as e:
+            self.logger.error("Drop failed")
+            raise e
+
+    def drop_table_sql(self):
 
         """
         this method drops the table from a SQL remote db
