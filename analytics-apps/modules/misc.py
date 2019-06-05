@@ -91,6 +91,12 @@ def cols_to_in_buildings(
 
 
 def longest_substr_matches(string: str, substrs: Iterable[str]) -> List[str]:
+    """
+    Returns a list of equally-lengthed substrings of string.
+    :param string:
+    :param substrs: A collection of possible substrings.
+    :return: The longest substrs member which are substrings of string.
+    """
     matches: List[str] = []
     for s in substrs:
         if s in string:

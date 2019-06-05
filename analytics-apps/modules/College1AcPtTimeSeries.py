@@ -1,6 +1,7 @@
 from typing import Set, List, Union
 from functools import lru_cache
 from .schemas import AcPtTimeSeries
+from .misc import longest_substr_matches
 
 
 class College1AcPtTimeSeries(AcPtTimeSeries):
@@ -40,9 +41,7 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
             else:
                 raise Exception('col should be of type str')
 
-        matches: List[str] = list(filter(
-            lambda build: build in col, cls.buildings()
-        ))
+        matches: List[str] = longest_substr_matches(col, cls.buildings())
 
         if len(matches) == 0 and safe:
             return None
@@ -50,11 +49,8 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
             raise Exception("No matching buildings for '{}'".format(col))
         elif len(matches) == 1:
             return matches[0]
-
-        # sort ascending in string length.
-        matches.sort(key=len)
-        # return the longest match.
-        return matches[-1]
+        else:
+            raise Exception("Multiple matching buildings for '{}'".format(col))
 
     @classmethod
     def run_tests(cls) -> None:
