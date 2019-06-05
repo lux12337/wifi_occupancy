@@ -6,8 +6,11 @@ take data from several different sources
 sources should be a web server.
 
 In this directory, we define a simple web
-server to test our package's capacity to
+server to test our library's capacity to
 communicate with web servers.
+
+As of now, our library does **not have that capacity**,
+so this web server is not currently being used.
 
 ## Getting Started
 
