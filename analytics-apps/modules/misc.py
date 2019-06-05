@@ -3,7 +3,8 @@ A module of miscellaneous tools for analysis.
 These tools should ideally be moved to themed modules later on.
 """
 
-from typing import List, Union, Dict, NamedTuple, Tuple, Set, Sequence, Hashable
+from typing import List, Union, Dict, NamedTuple, Tuple, Set, Sequence,\
+    Hashable, Iterable
 import numpy as np
 from .schemas import AcPtTimeSeries
 
@@ -87,3 +88,14 @@ def cols_to_in_buildings(
         )),
         dtype=bool
     )
+
+
+def longest_substr_matches(string: str, substrs: Iterable[str]) -> List[str]:
+    matches: List[str] = []
+    for s in substrs:
+        if s in string:
+            if len(matches) == 0 or len(s) > len(matches[0]):
+                matches = [s]
+            elif len(s) == len(matches[0]):
+                matches.append(s)
+    return matches
