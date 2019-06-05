@@ -360,13 +360,14 @@ class remote_db():
         """
 
         try:
+            query = "INSERT INTO {} VALUES".format(self.table_name)
+
             for i, row in data.iterrows():
                 time = (row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14])
-                self.db.executesql(
-                    "INSERT INTO {} VALUES('{}', '{}', '{}')".format(
-                        self.table_name, time, row['id'], row['value']
-                    )
-                )
+                query = query + "('{}', '{}', '{}'),".format(time, row['id'], row['value'])
+
+            query = query[:-1] + ';'
+            self.db.executesql(query)
             self.db.commit()
             self.logger.info("data successfully pushed to remote db")
 
