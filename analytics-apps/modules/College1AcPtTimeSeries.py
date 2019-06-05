@@ -43,9 +43,9 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
 
         matches: List[str] = longest_substr_matches(col, cls.buildings())
 
-        if len(matches) == 0 and safe:
-            return None
-        elif len(matches) == 0:
+        if len(matches) == 0:
+            if safe:
+                return None
             raise Exception("No matching buildings for '{}'".format(col))
         elif len(matches) == 1:
             return matches[0]
