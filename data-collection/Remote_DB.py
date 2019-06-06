@@ -1,8 +1,10 @@
 import os
 import logging
 from pandas import DataFrame, Series, DatetimeIndex, to_datetime, datetime
+import numpy as np
 import configparser
 import datetime
+from collections import defaultdict
 from logging.handlers import TimedRotatingFileHandler
 from pydal import DAL, Field
 from influxdb import DataFrameClient
@@ -155,7 +157,6 @@ class remote_db():
                 self.db = DAL('postgres://{}:{}@{}:{}/{}'.format(
                     self.username, self.password, self.host, self.port, self.database
                 ))
-                self.create_table_timescale()
                 self.create_hypertable_timescale()
 
             elif self.db_type == "influx":
@@ -191,74 +192,51 @@ class remote_db():
         :param measurement: the name of this measurement
         :return:
         """
-        def preprocess_data(data_: DataFrame) -> DataFrame:
+        def data_chunks(
+                data_: DataFrame, ts_col: str
+        ) -> Generator[DataFrame, None, None]:
             """
-            :param data_: the original data
-            :return: data in the desired format
-            """
-            columns = list(data_.columns)
-
-            # for influx, ts must in datetime format
-            data_['ts'] = DatetimeIndex(data_['ts'].apply(
-                # "YYYY-MM-DD HH:MM:SS"
-                lambda ts: to_datetime(
-                    arg=ts, format='%Y%m%d%H%M%S'
-                )
-            ))
-
-            # swap to ensure that ts is the first column
-            ts_index: int = columns.index('ts')
-            columns[0], columns[ts_index] = columns[ts_index], columns[0]
-            data_ = data_[columns]
-
-            return data_
-
-        def data_chunks(data_: DataFrame) -> Generator[DataFrame, None, None]:
-            """
-            It's necessary to break up the data into multiple chunks.
+            Because there are repeating timestamps in data (which are invalid
+            in a pandas dataframe index),
+            it's necessary to break up the data into multiple chunks.
             Each chunk will be written separately.
             :param data_: original data
+            :param ts_col: name of the timestamp column.
             :return: a generator for the chunks
             """
-            row_count: int = data_.shape[0]
-
             # keep track of which chunk each row belongs to.
-            # a series of repeated -1's.
-            chunk_numbers: Series = Series([-1] * row_count)
+            chunk_numbers = np.array([-1] * data_.shape[0], dtype=int)
+            max_chunk_number = -1
+            # The unique timestamps.
+            unique_tstamps: Series = data_[ts_col].unique()
 
-            # keep track of unique timestamps we find
-            repeats_per_ts: Dict[datetime, int] = {}
+            for ts in np.nditer(unique_tstamps):
+                # Find the rows with matching timestamps.
+                ts_matches = data_[ts_col] == ts
+                match_count = np.sum(ts_matches)
+                # These rows must go into separate chunks.
+                chunk_numbers[ts_matches] = np.arange(0, match_count)
+                # Keep track of how many chunks we've create through the max.
+                if match_count > max_chunk_number:
+                    max_chunk_number = match_count
 
-            for i, row in data_.iterrows():
-
-                ts: datetime = row['ts']
-
-                # ensure that there's an entry for ts
-                if ts not in repeats_per_ts:
-                    repeats_per_ts[ts] = -1
-
-                # Record that this we've seen this timestamp n times.
-                repeats_per_ts[ts] = repeats_per_ts[ts] + 1
-
-                # this row's chunk_number = n
-                chunk_numbers[i] = repeats_per_ts[ts]
-
-            last_chunk_number: int = max(repeats_per_ts.values())
-
-            for chunk_n in range(0, last_chunk_number+1):
-                chunk = data_.loc[
-                    # return the rows whose chunk_number matches chunk_n
-                    chunk_numbers == chunk_n
-                ].copy()
-
-                chunk.set_index('ts', inplace=True)
-
+            for cn in range(0, max_chunk_number+1):
+                chunk = data_.loc[chunk_numbers == cn, :].copy()
+                # We can only set the index after we've ensured that no
+                # timestamps repeat on each chunk.
+                chunk.set_index(ts_col, inplace=True)
                 yield chunk
 
+        # for influx, ts must in datetime format.
+        data['ts'] = to_datetime(data['ts'], infer_datetime_format=True)
 
-        data: DataFrame = preprocess_data(data)
+        # swap to ensure that ts_col is the first column.
+        columns = list(data.columns)
+        ts_index: int = columns.index('ts')
+        columns[0], columns[ts_index] = columns[ts_index], columns[0]
+        data = data[columns]
 
-        for chunk in data_chunks(data):
+        for chunk in data_chunks(data, 'ts'):
             self.influx_client.write_points(
                 dataframe=chunk,
                 measurement=measurement,
@@ -271,7 +249,7 @@ class remote_db():
         this method creates a SQL type of table in the remote db, if it fails, it catches the warning and logs it
         """
         try:
-            self.db.define_table(self.table_name, Field('AP_id'), Field('value'), Field('time', type='datetime'))
+            self.db.define_table(self.table_name, Field('AP_id'), Field('value', type='integer'), Field('time', type='datetime'))
             self.logger.info("{} was created in remote db".format(self.table_name))
 
         except Exception as e:
@@ -282,13 +260,22 @@ class remote_db():
                 )
             )
 
+
+    def create_hypertable_timescale(self):
+        """
+        this method tries to create a postgres table, and then it turns it into a hypertable
+        """
+        self.create_table_timescale()
+        self.table_to_hypertable()
+
+
     def create_table_timescale(self):
         """
         this method creates a postgres table in preparation for a hypertable in timescale
         """
         try:
             self.db.executesql(
-                "CREATE TABLE IF NOT EXISTS {}(time TIMESTAMP, AP_id CHAR(512), value CHAR(512));".format(
+                "CREATE TABLE IF NOT EXISTS {}(time TIMESTAMP, AP_id CHAR(512), value INT);".format(
                     self.table_name
                 )
             )
@@ -301,7 +288,7 @@ class remote_db():
             )
             raise e
 
-    def create_hypertable_timescale(self):
+    def table_to_hypertable(self):
         """
         this method tries to turn the table into a hypertable, and it if it fails, it will catch the warning and rollback the commit
         """
@@ -373,13 +360,14 @@ class remote_db():
         """
 
         try:
+            query = "INSERT INTO {} VALUES".format(self.table_name)
+
             for i, row in data.iterrows():
                 time = (row['ts'][:4] + '-' + row['ts'][4:6] + '-' + row['ts'][6:8] + ' ' + row['ts'][8:10] + ':' + row['ts'][10:12] + ':' + row['ts'][12:14])
-                self.db.executesql(
-                    "INSERT INTO {} VALUES('{}', '{}', '{}')".format(
-                        self.table_name, time, row['id'], row['value']
-                    )
-                )
+                query = query + "('{}', '{}', '{}'),".format(time, row['id'], row['value'])
+
+            query = query[:-1] + ';'
+            self.db.executesql(query)
             self.db.commit()
             self.logger.info("data successfully pushed to remote db")
 
@@ -387,7 +375,29 @@ class remote_db():
             self.logger.error("pushing to remote database failed")
             raise e
 
+
     def drop_table(self):
+        """
+        this method drops a table depending on what type of database is being used
+        """
+
+        try:
+            if self.db_type == "mysql"\
+                    or self.db_type == "sqlite"\
+                    or self.db_type == "postgres":
+                self.drop_table_sql()
+
+            elif self.db_type == "timescale":
+                self.drop_table_timescale()
+
+            else:
+                raise Exception('Database type has no drop function implemented.')
+
+        except Exception as e:
+            self.logger.error("Drop failed")
+            raise e
+
+    def drop_table_sql(self):
 
         """
         this method drops the table from a SQL remote db
