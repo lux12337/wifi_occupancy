@@ -53,26 +53,3 @@ class College1AcPtTimeSeries(AcPtTimeSeries):
             raise Exception("Multiple matching buildings for '{}'".format(col))
         else:
             return matches[0]
-
-    @classmethod
-    def run_tests(cls) -> None:
-        """
-        Run unit tests.
-        """
-        def test_col_to_building() -> None:
-            """
-            A unit test for col_to_building.
-            """
-            for colname, building in [
-                ('POM-SUMNER212-AP205-2', 'SUMNER'),
-                ('POM-CLARKV401-AP205-1', 'CLARK'),
-                ('POM-CARNEGIE215-AP215-5', 'CARNEGIE')
-            ]:
-                assert cls.col_to_building(colname) == building
-
-        test_col_to_building()
-        print('all tests passed')
-
-
-if __name__ == '__main__':
-    College1AcPtTimeSeries.run_tests()
