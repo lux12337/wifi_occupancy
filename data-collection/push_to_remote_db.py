@@ -31,7 +31,6 @@ engine = local_db( project_path=project_path )
 data: DataFrame = engine.read_local_DB()
 
 """push to the remote db"""
-
 remote = remote_db()
 remote.push_to_remote_db(data=data)
 # remote.drop_table()

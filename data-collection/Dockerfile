@@ -1,6 +1,7 @@
 FROM python:3-slim
 ADD . /code
 WORKDIR /code
+
 RUN apt-get update
 RUN pip install --upgrade pip
 RUN pip install pandas \
@@ -11,4 +12,7 @@ RUN pip install pandas \
                 pydal \
                 psycopg2-binary \
                 influxdb \
-                pymysql
+                pymysql \
+                apscheduler
+
+CMD python ./auto-collect.py 
