@@ -4,7 +4,7 @@ These tools should ideally be moved to themed modules later on.
 """
 
 from typing import List, Union, Dict, NamedTuple, Tuple, Set, Sequence,\
-    Hashable, Iterable
+    Hashable, Iterable, Callable
 import numpy as np
 from .schemas import AcPtTimeSeries
 
@@ -90,7 +90,7 @@ def cols_to_in_buildings(
     )
 
 
-def longest_substr_matches(string: str, substrs: Iterable[str]) -> List[str]:
+def longest_substr(string: str, substrs: Iterable[str]) -> List[str]:
     """
     Returns a list of equally-lengthed substrings of string.
     :param string:
@@ -105,3 +105,14 @@ def longest_substr_matches(string: str, substrs: Iterable[str]) -> List[str]:
             elif len(s) == len(matches[0]):
                 matches.append(s)
     return matches
+
+
+def longest_substr_matcher(substrs: Iterable[str]) -> Callable[[str], List[str]]:
+    """
+    Binds misc.longest_substr to a particular collection of substrs.
+    :param substrs:
+    :return:
+    """
+    def bound_matcher(string: str) -> List[str]:
+        return longest_substr(string=string, substrs=substrs)
+    return bound_matcher
