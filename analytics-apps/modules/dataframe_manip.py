@@ -70,13 +70,15 @@ def fill_intervening_nas(
         """
         Fills the intervening na-values of a series inplace.
         """
-        if not series.hasnans:
+        if series.size == 0:
             return
 
-        na_map = series.isna()
+        na_map = series.isna().to_numpy()
         not_na_map = ~na_map
 
-        not_na_indices = np.where(not_na_map)[0]
+        not_na_indices = np.nonzero(not_na_map)[0]
+        if not_na_indices.size == 0:
+            return
         first_not_na = not_na_indices[0]
         last_not_na = not_na_indices[-1]
 
@@ -84,9 +86,9 @@ def fill_intervening_nas(
         intervening_na_map = na_map
         # Eliminate initial and trailing na's.
         if first_not_na != 0:
-            intervening_na_map.loc[:first_not_na] = False
+            intervening_na_map[:first_not_na] = False
         if last_not_na != intervening_na_map.size-1:
-            intervening_na_map.loc[last_not_na + 1:] = False
+            intervening_na_map[last_not_na + 1:] = False
 
         series.loc[intervening_na_map] = fill_val
         pass
