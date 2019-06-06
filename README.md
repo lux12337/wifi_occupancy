@@ -23,6 +23,7 @@ pip install argparse
 * Adapted from https://docs.timescale.com/v1.2/getting-started/installation/ubuntu/installation-apt-ubuntu
 * Install method was apt and PostgreSQL version is 11
 * Database was set in Ubuntu Server 18.04.2 amd64
+* Timescale is built on top of postgres so you will need to install the same technologies as Timescale
 
 ##### Setting up
 1. Update the package resource list for your OS.  `lsb_release -c -s` returns the correct codename of the OS.
@@ -50,11 +51,9 @@ sudo service postgresql restart
 ```
 
 ### Postgres
-##### Key Components
-* Timescale is built ontop of postgres so you will need to install the same techonolgoies as Timescale
 
 ##### Setting up
-1. To run the libary scrips
+1. To run the library scrips
 ```bash
 docker build -t wifi-script .
 docker run wifi-script
@@ -101,7 +100,7 @@ influx setup # <--- In Influx Console
 ### MySQL
 ##### Key Components
 * MySQL is configured within a Docker container (Remote DB)
-* The wifi script is runned on the host computer (Local DB)
+* The wifi script is ran on the host computer (Local DB)
 ##### Setting up
 1. Pull a Docker Image with the latest MySQL version. The following command will automatically pull a MySQL image if the latest sql image cannot be found on the host computer.
 ```bash
@@ -162,7 +161,7 @@ mysql> select * from wifi_table;
 ### SQLite
 ##### Key Components
 * SQLite is configured on the local host (SQLite sends/transfers data through files. It is technically not a service.)
-* The wifi script is runned on the host computer (Local DB)
+* The wifi script is ran on the host computer (Local DB)
 ##### Setting up (In a Docker)
 1. Create a file called Dockerfile with the following content:
 ```bash
