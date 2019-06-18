@@ -25,6 +25,7 @@ analytics-apps/wifi_data_until_20190204.csv
 # No csvs except sample data
 *.csv
 !sample_data.csv
+!course_enrollment_sample_data.csv
 
 # Excel Workbooks
 *.xlsx
