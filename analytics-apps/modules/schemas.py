@@ -17,6 +17,9 @@ class AcPtTimeSeries:
     @classmethod
     @abstractmethod
     def buildings(cls) -> Set[Hashable]:
+        """
+        :return: the set of all building names.
+        """
         pass
 
     @classmethod
@@ -25,10 +28,9 @@ class AcPtTimeSeries:
             cls, col: Hashable, safe: bool = False
     ) -> Union[any, None]:
         """
-        :param col: the column index. The type should match this schema's
-        column index type.
+        :param col: the column name.
         :param safe: Should this function throw an exception or safely return
-        None if there are no matches?
+        None if there are 0 or more than 1 match?
         :return: The building name corresponding to col.
         """
         pass
