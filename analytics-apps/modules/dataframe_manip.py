@@ -34,7 +34,6 @@ def csv_to_timeseries_df(
     Loads data from a csv into a pandas dataframe.
     The csv is expected to have a datetime-formattable string in the first column.
     The dataframe will have a DateTimeIndex in the first column.
-    The other series will be float64
     :return: pandas dataframe
     """
     # Assumptions
@@ -204,7 +203,6 @@ def row_quartiles(
         numeric_only: bool = False
 ) -> pd.DataFrame:
     """
-    # TODO test
     :param df: numeric (or datetime
     :param interpolation: how to interpolate between values.
     :param numeric_only: whether or not to ignore datetime/timedelta iqr's.
@@ -225,7 +223,6 @@ def column_quartiles(
         numeric_only: bool = False
 ) -> pd.DataFrame:
     """
-    # TODO test
     :param df: numeric (or datetime
     :param interpolation: how to interpolate between values.
     :param numeric_only: whether or not to ignore datetime/timedelta iqr's.
